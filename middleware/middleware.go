@@ -1,10 +1,55 @@
-package middleware
+// Copyright 2014  Author. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-import "net/http"
 
 // 把中间件和原本的路由处理器封装在一起， 先执行中间件，如果中间件没有提前结束请求， 最终会把执行权归还给原本的路由处理器。
 // 中间件允许注册多个，执行顺序和注册顺序一致。 其实原本的路由处理器也可以看做一个中间件了，不过，它是放在最后一个执行位置上（除了末尾的空中间件）。
-// 源自开源项目：https://github.com/urfave/negroni
+// 参考开源项目：https://github.com/urfave/negroni
+//
+//
+//   http.HandleFunc("/log", func)
+//   mw := middleware.New()
+//   mw.RegisterMiddlewareHandleFunc(Recovery, Token)
+//   mw.Run(":9999" )
+//
+// OR
+//
+/*package main
+
+import (
+	"fmt"
+	"net/http"
+)
+
+func main() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		fmt.Fprintf(w, "Welcome to the home page!")
+	})
+
+	n := middleware.New() // Includes some default middlewares
+	n.MuxHandler(mux)
+	n.RegisterMiddlewareHandleFunc(Middleware1,Middleware2)
+        n.Bootstrap()
+	http.ListenAndServe(":3000", n)
+}*/
+//
+
+
+package middleware
+
+import "net/http"
 
 
 //中间件接口
@@ -78,7 +123,7 @@ func (c *Cbping)Run(addr string) {
 	http.ListenAndServe(addr, c)
 }
 
-func (c *Cbping)RegisterMiddlewareHandlFunc(handlers... func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc)) {
+func (c *Cbping)RegisterMiddlewareHandleFunc(handlers... func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc)) {
 	for _, handler := range handlers {
 		c.RegisterMiddleWare(MiddleWareFunc(handler))
 	}
