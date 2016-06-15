@@ -38,7 +38,7 @@ func main() {
 		fmt.Fprintf(w, "Welcome to the home page!")
 	})
 
-	n := middleware.New() // Includes some default middlewares
+	n := middleware.New()
 	n.MuxHandler(mux)
 	n.RegisterMiddlewareHandleFunc(Middleware1,Middleware2)
         n.Bootstrap()
@@ -87,7 +87,7 @@ func Wrap(handler http.Handler) MiddleWare {
 
 //Cbping是一堆中间件处理程序管理器，
 //可以当作http.handler被调用
-//通过RegisterMiddlewareHandler注册中间件
+//通过RegisterMiddlewareHandleFunc|RegisterMiddleWare注册中间件
 type Cbping struct {
 	//链表头
 	//由中间件和路由处理器组建而成
