@@ -15,6 +15,8 @@
 //
 // curl包
 //
+//   func Curl(url, method string, params, header map[string]string, body []byte) (resBody map[string]interface{}, resHeader map[string][]string, responseStatus string) 
+//
 package curl
 
 import (
@@ -130,6 +132,11 @@ func (curl *CurlRequest) String() string {
 //}
 
 // curl
+// @url string 请求Uri
+// @method string 方法。GET，POST，PUT等
+// @params map[string]string 参数。?a=b
+// @header map[string]string 头部信息
+// @body   []byte
 func Curl(url, method string, params, header map[string]string, body []byte) (resBody map[string]interface{}, resHeader map[string][]string, responseStatus string) {
 
 	curlReq := &CurlRequest{
