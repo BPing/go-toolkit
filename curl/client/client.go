@@ -69,6 +69,10 @@ func (c *Client) SetRecord(record func(tag, msg string)) {
 	c.Record = record
 }
 
+func (c *Client) SetSlowReqLong(long time.Duration) {
+	c.SlowReqLong = long
+}
+
 // 设置代理
 // example:
 //
@@ -161,14 +165,21 @@ func SetDefaultClient(title string, client *http.Client) {
 // 		u, _ := url.ParseRequestURI("http://127.0.0.1:8118")
 // 		return u, nil
 // 	}
+// 内部调用DefaultClient
 func SetProxy(proxy func(*http.Request) (*url.URL, error)) {
 	DefaultClient.SetProxy(proxy)
 }
 
-// 记录
+// 设置记录
+// 内部调用DefaultClient
 func SetRecord(record func(tag, msg string)) {
 	DefaultClient.SetRecord(record)
 }
+
+func SetSlowReqLong(long time.Duration) {
+	DefaultClient.SetSlowReqLong(long)
+}
+
 
 // 处理请求，内部调用DefaultClient
 func DoRequest(req Request) (Response, error) {
