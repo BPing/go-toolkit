@@ -24,25 +24,25 @@
 //
 // OR
 //
-/*package main
+	/*package main
 
-import (
-	"fmt"
-	"net/http"
-)
+	import (
+		"fmt"
+		"net/http"
+	)
 
-func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintf(w, "Welcome to the home page!")
-	})
+	func main() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+			fmt.Fprintf(w, "Welcome to the home page!")
+		})
 
-	n := middleware.New()
-	n.MuxHandler(mux)
-	n.RegisterMiddlewareHandleFunc(Middleware1,Middleware2)
-        n.Bootstrap()
-	http.ListenAndServe(":3000", n)
-}*/
+		n := middleware.New()
+		n.MuxHandler(mux)
+		n.RegisterMiddlewareHandleFunc(Middleware1,Middleware2)
+		n.Bootstrap()
+		http.ListenAndServe(":3000", n)
+	}*/
 //
 package middleware
 
