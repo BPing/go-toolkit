@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-// client 包 核心代码包
+// client 包
 // @author cbping
 package client
 
