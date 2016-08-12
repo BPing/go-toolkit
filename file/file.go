@@ -1,35 +1,35 @@
 package file
 
 import (
-	"os"
-	"net/http"
-	"io/ioutil"
-	"io"
 	"bytes"
-	"strings"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
 	"path"
+	"strings"
 )
 
 // 下载文件
 func DownLoadVideo(httpSrc, dst string) (n int64, err error) {
 	os.MkdirAll(path.Dir(dst), os.ModeDir)
 	out, err := os.Create(dst)
-	if (err != nil) {
+	if err != nil {
 		return
 	}
 	defer out.Close()
 
 	resp, err := http.Get(httpSrc)
-	if (err != nil) {
+	if err != nil {
 		return
 	}
 	defer resp.Body.Close()
 	pix, err := ioutil.ReadAll(resp.Body)
-	if (err != nil) {
+	if err != nil {
 		return
 	}
 	n, err = io.Copy(out, bytes.NewReader(pix))
-	if (err != nil) {
+	if err != nil {
 		DeletePath(dst)
 	}
 	return
@@ -40,23 +40,23 @@ func CopyFile(src, dst string) (n int64, err error) {
 	os.MkdirAll(path.Dir(dst), os.ModeDir)
 	os.MkdirAll(path.Dir(src), os.ModeDir)
 	out, err := os.Create(dst)
-	if (err != nil) {
+	if err != nil {
 		return
 	}
 	defer out.Close()
 
 	in, err := os.Open(src)
-	if (err != nil) {
+	if err != nil {
 		return
 	}
 	defer in.Close()
 	pix, err := ioutil.ReadAll(in)
-	if (err != nil) {
+	if err != nil {
 		return
 	}
 
 	n, err = io.Copy(out, bytes.NewReader(pix))
-	if (err != nil) {
+	if err != nil {
 		DeletePath(dst)
 	}
 	return
@@ -66,7 +66,7 @@ func CopyFile(src, dst string) (n int64, err error) {
 func LocalMapVideo(rootDir, httpUrl string) (localPath string) {
 	path := strings.Split(httpUrl, "/")
 	if len(path) > 1 {
-		localPath = rootDir + "/" + path[len(path) - 1]
+		localPath = rootDir + "/" + path[len(path)-1]
 	}
 	return
 }
@@ -87,4 +87,3 @@ func PathExists(path string) (bool, error) {
 func DeletePath(path string) error {
 	return os.RemoveAll(path)
 }
-

@@ -35,7 +35,7 @@ type SmtpHandler struct {
 	Subject string
 }
 
-func NewSmtpHandler(config SmtpConfig, from string, to []string, subject string) (*SmtpHandler) {
+func NewSmtpHandler(config SmtpConfig, from string, to []string, subject string) *SmtpHandler {
 	auth := smtp.PlainAuth(
 		"",
 		config.Username,
@@ -45,14 +45,14 @@ func NewSmtpHandler(config SmtpConfig, from string, to []string, subject string)
 	return &SmtpHandler{auth, config.Addr, from, to, subject}
 }
 
-func (s *SmtpHandler)SendMail(subject string, message string, isHtml bool) (error) {
+func (s *SmtpHandler) SendMail(subject string, message string, isHtml bool) error {
 
 	contentType := "text/plain"
 	if isHtml {
 		contentType = "text/html"
 	}
 
-	if ("" == subject) {
+	if "" == subject {
 		subject = s.Subject
 	}
 
@@ -60,15 +60,15 @@ func (s *SmtpHandler)SendMail(subject string, message string, isHtml bool) (erro
 	return smtp.SendMail(s.Addr, s.Auth, s.From, s.To, []byte(msg))
 }
 
-func (s *SmtpHandler)AddToAccount(to... string) {
+func (s *SmtpHandler) AddToAccount(to ...string) {
 	s.To = append(s.To, to...)
 }
 
-func (s *SmtpHandler)SetFrom(from string) {
+func (s *SmtpHandler) SetFrom(from string) {
 	s.From = from
 }
 
-func (s *SmtpHandler)SetSubject(subject string) {
+func (s *SmtpHandler) SetSubject(subject string) {
 	s.Subject = subject
 }
 
