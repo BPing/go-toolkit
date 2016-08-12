@@ -24,7 +24,8 @@
 //
 // OR
 //
-	/*package main
+	/*
+	package main
 
 	import (
 		"fmt"
@@ -42,7 +43,8 @@
 		n.RegisterMiddlewareHandleFunc(Middleware1,Middleware2)
 		n.Bootstrap()
 		http.ListenAndServe(":3000", n)
-	}*/
+	}
+	*/
 //
 package middleware
 
