@@ -66,7 +66,7 @@ func (resp *Response)Bytes() ([]byte, error) {
 	return resp.body, err
 }
 
-// 将响应的Response的body字节内容转成json格式
+// 将响应的Response的body字节内容以JSON格式转化
 func (resp *Response) ToJSON(v interface{}) error {
 	data, err := resp.Bytes()
 	if err != nil {
@@ -75,7 +75,7 @@ func (resp *Response) ToJSON(v interface{}) error {
 	return json.Unmarshal(data, v)
 }
 
-// 将响应的Response的body字节内容转成xml格式
+// 将响应的Response的body字节内容以XML格式转化
 func (resp *Response) ToXML(v interface{}) error {
 	data, err := resp.Bytes()
 	if err != nil {

@@ -83,7 +83,7 @@ func (c *Client) SetSlowReqLong(long time.Duration) {
 func (c *Client) SetProxy(proxy func(*http.Request) (*url.URL, error)) {
 	//TODO::默认http.Client或者默认http.Transport时，是否值得改变代理（影响其他请求）？
 	if nil != c.Client && nil != c.Client.Transport {
-		c.Client.Transport.(http.Transport).Proxy = proxy
+		c.Client.Transport.(*http.Transport).Proxy = proxy
 	}
 
 	return
@@ -182,7 +182,6 @@ func SetSlowReqLong(long time.Duration) {
 
 
 // 处理请求，内部调用DefaultClient
-func DoRequest(req Request) (Response, error) {
-	DefaultClient.Client.Transport
+func DoRequest(req Request) (*Response, error) {
 	return DefaultClient.DoRequest(req)
 }
