@@ -25,7 +25,6 @@ import (
 	"net/url"
 	"strings"
 	"fmt"
-	"dream_live_api/models/resp"
 )
 
 const (
@@ -126,8 +125,5 @@ func Curl(url, method string, params, header map[string]string, body []byte) (re
 
 	resp, err = client.DoRequest(curlReq)
 
-	if err != nil {
-		return nil, nil, err.Error()
-	}
 	return
 }
