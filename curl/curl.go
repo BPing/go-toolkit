@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"strings"
 	"fmt"
+	"dream_live_api/models/resp"
 )
 
 const (
@@ -71,9 +72,13 @@ func (curl *CurlRequest) HttpRequest() (req *http.Request, err error) {
 	} else {
 		if curl.Body != nil {
 			// body不为nil,则params附带到Url上
-			req, err = http.NewRequest(curl.Method, curl.Url + "?" + v.Encode(), strings.NewReader(string(curl.Body)))
+			queryParam := ""
+			if (len(v) > 0) {
+				queryParam = "?" + v.Encode()
+			}
+			req, err = http.NewRequest(curl.Method, curl.Url + queryParam, strings.NewReader(string(curl.Body)))
 			req.ContentLength = int64(len(curl.Body))
-		}else {
+		} else {
 			req, err = http.NewRequest(curl.Method, curl.Url, strings.NewReader(v.Encode()))
 			req.ContentLength = int64(len([]byte(v.Encode())))
 		}
@@ -103,42 +108,13 @@ func (curl *CurlRequest) String() string {
 
 //----------------------------------------------------------------------------------------------------------------------
 
-//
-//type Curl struct {
-//	*client.Client
-//}
-//
-//func (c *Curl)Query(url, method string, params, header map[string]string, body []byte) (resBody map[string]interface{}, resHeader map[string][]string, responseStatus string) {
-//	if nil == c.Client {
-//		c.Client = client.DefaultClient
-//	}
-//	curlReq := &CurlRequest{
-//		Url:url,
-//		Method:method,
-//		Params:params,
-//		Headers:header,
-//		Body:body,
-//	}
-//
-//	resp, err := c.Client.Query(curlReq)
-//
-//	if err != nil {
-//		return nil, nil, "10003 remote req error::" + err.Error()
-//	}
-//
-//	resp.ToJSON(&resBody)
-//	resHeader = resp.Header
-//	responseStatus = resp.Status
-//	return
-//}
-
 // curl
 // @url string 请求Uri
 // @method string 方法。GET，POST，PUT等
 // @params map[string]string 参数。?a=b
 // @header map[string]string 头部信息
 // @body   []byte
-func Curl(url, method string, params, header map[string]string, body []byte) (resBody map[string]interface{}, resHeader map[string][]string, responseStatus string) {
+func Curl(url, method string, params, header map[string]string, body []byte) (resp *client.Response, err error) {
 
 	curlReq := &CurlRequest{
 		Url:url,
@@ -148,14 +124,10 @@ func Curl(url, method string, params, header map[string]string, body []byte) (re
 		Body:body,
 	}
 
-	resp, err := client.DoRequest(curlReq)
+	resp, err = client.DoRequest(curlReq)
 
 	if err != nil {
 		return nil, nil, err.Error()
 	}
-
-	resp.ToJSON(&resBody)
-	resHeader = resp.Header
-	responseStatus = resp.Status
 	return
 }

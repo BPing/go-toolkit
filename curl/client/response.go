@@ -41,7 +41,7 @@ func (resp *Response) ToFile(filename string) error {
 }
 
 // 返回响应的Response的body字节内容
-func (resp *Response)Bytes() ([]byte, error) {
+func (resp *Response) Bytes() ([]byte, error) {
 	if resp.body != nil {
 		return resp.body, nil
 	}
