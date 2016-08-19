@@ -20,21 +20,21 @@
 package curl
 
 import (
-	"github.com/BPing/Golib/curl/client"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
-	"fmt"
+
+	"github.com/BPing/Golib/curl/client"
 )
 
 const (
-	GET = "GET"
-	POST = "POST"
-	PUT = "PUT"
+	GET    = "GET"
+	POST   = "POST"
+	PUT    = "PUT"
 	DELETE = "DELETE"
-	HEAD = "HEAD"
+	HEAD   = "HEAD"
 )
-
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -44,14 +44,14 @@ const (
 type CurlRequest struct {
 	client.BaseRequest
 	// http
-	Method  string
-	Url     string
+	Method string
+	Url    string
 
 	Params  map[string]string
 	Headers map[string]string
 
 	// body不为nil,则params附带到Url上
-	Body    []byte
+	Body []byte
 }
 
 //
@@ -66,20 +66,21 @@ func (curl *CurlRequest) HttpRequest() (req *http.Request, err error) {
 
 	curl.Method = strings.ToUpper(curl.Method)
 
+	queryParam := ""
+	if len(v) > 0 {
+		queryParam = "?" + v.Encode()
+	}
+
 	if curl.Method == GET {
-		req, err = http.NewRequest(curl.Method, curl.Url + "?" + v.Encode(), nil)
+		req, err = http.NewRequest(curl.Method, curl.Url+queryParam, nil)
 	} else {
-		if curl.Body != nil {
+		if curl.Body != nil && string(curl.Body) != "" {
 			// body不为nil,则params附带到Url上
-			queryParam := ""
-			if (len(v) > 0) {
-				queryParam = "?" + v.Encode()
-			}
-			req, err = http.NewRequest(curl.Method, curl.Url + queryParam, strings.NewReader(string(curl.Body)))
-			req.ContentLength = int64(len(curl.Body))
+			req, err = http.NewRequest(curl.Method, curl.Url+queryParam, strings.NewReader(string(curl.Body)))
 		} else {
 			req, err = http.NewRequest(curl.Method, curl.Url, strings.NewReader(v.Encode()))
-			req.ContentLength = int64(len([]byte(v.Encode())))
+			//头部参数设置为form data 类型
+			req.Header.Add("Content-type", "application/x-www-form-urlencoded")
 		}
 
 	}
@@ -93,7 +94,7 @@ func (curl *CurlRequest) HttpRequest() (req *http.Request, err error) {
 }
 
 func (curl *CurlRequest) String() string {
-	return fmt.Sprintf("Url:%s,Method:%s,Header:%#v,Params:%#v,Body:%v", curl.Url, curl.Method, curl.Headers, curl.Params, nil != curl.Body)
+	return fmt.Sprintf("\n Url:%s, \n Method:%s,\n Header:%#v,\n Params:%#v,\n Body:%v \n", curl.Url, curl.Method, curl.Headers, curl.Params, string(curl.Body))
 }
 
 //func (curl *CurlRequest) Clone() client.Request {
@@ -103,7 +104,6 @@ func (curl *CurlRequest) String() string {
 //
 //	return &new_obj
 //}
-
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -116,11 +116,11 @@ func (curl *CurlRequest) String() string {
 func Curl(url, method string, params, header map[string]string, body []byte) (resp *client.Response, err error) {
 
 	curlReq := &CurlRequest{
-		Url:url,
-		Method:method,
-		Params:params,
-		Headers:header,
-		Body:body,
+		Url:     url,
+		Method:  method,
+		Params:  params,
+		Headers: header,
+		Body:    body,
 	}
 
 	resp, err = client.DoRequest(curlReq)

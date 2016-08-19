@@ -12,22 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // client 包
 // @author cbping
 package client
 
 import (
 	"errors"
-	"net/http"
-	"time"
-	"net/url"
 	"fmt"
+	"net/http"
+	"net/url"
+	"time"
 )
 
 const (
-	SlowReqRecord = "SlowReqRecord"
-	ReqRecord = "ReqRecord"
+	SlowReqRecord  = "SlowReqRecord"
+	ReqRecord      = "ReqRecord"
 	ErrorReqRecord = "ErrorReqRecord"
 )
 
@@ -45,7 +44,7 @@ type Client struct {
 	*http.Client
 
 	//
-	UserAgent   string
+	UserAgent string
 
 	// 超过SlowReqLong时间长度的请求，将记录为慢请求
 	// 默认为2秒
@@ -53,12 +52,12 @@ type Client struct {
 
 	// 函数参数
 	// 记录信息；如日志记录
-	Record      func(tag, msg string)
+	Record func(tag, msg string)
 
 	//版本号
-	Version     string
+	Version string
 	//
-	debug       bool
+	debug bool
 }
 
 func (c *Client) SetDebug(debug bool) {
@@ -96,7 +95,7 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	}
 
 	defer func() {
-		if nil != err&&nil != c.Record {
+		if nil != err && nil != c.Record {
 			c.Record(ErrorReqRecord, fmt.Sprintf("query:: %s errorr:: %v) ", req.String(), err))
 			err = clientError(err)
 		}
@@ -112,7 +111,7 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	}
 
 	//必要头部信息设置
-	httpReq.Header.Set("User-Agent", `Bping-Curl-` + c.UserAgent + "/" + c.Version)
+	httpReq.Header.Set("User-Agent", `Bping-Curl-`+c.UserAgent+"/"+c.Version)
 
 	t0 := time.Now()
 	httpResp, err := c.Client.Do(httpReq)
@@ -122,23 +121,23 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	}
 
 	if nil != c.Record {
+		reqInfo := fmt.Sprintf("http query:: %s status:%d \n ts:(%v) \n", req.String(), httpResp.StatusCode, t1.Sub(t0))
 		if t1.Sub(t0) >= c.SlowReqLong {
-			c.Record(SlowReqRecord, req.String())
+			c.Record(SlowReqRecord, reqInfo)
 		}
-		c.Record(ReqRecord, fmt.Sprintf("http query:: %s %d (%v) ", req.String(), httpResp.StatusCode, t1.Sub(t0)))
+		c.Record(ReqRecord, reqInfo)
 	}
-
-	return &Response{Response:httpResp}, nil
-
+	resp = &Response{Response: httpResp}
+	return
 }
 
-func NewClient(title string, client *http.Client) (c *Client) {
+func NewClient(title string, client *http.Client) *Client {
 	return &Client{
-		Client:client,
-		Version:Version,
-		UserAgent:title,
-		debug:false,
-		SlowReqLong:2 * time.Second,
+		Client:      client,
+		Version:     Version,
+		UserAgent:   title,
+		debug:       false,
+		SlowReqLong: 2 * time.Second,
 	}
 }
 
@@ -176,10 +175,19 @@ func SetRecord(record func(tag, msg string)) {
 	DefaultClient.SetRecord(record)
 }
 
+// 设置慢请求时间限制
+// 内部调用DefaultClient
 func SetSlowReqLong(long time.Duration) {
 	DefaultClient.SetSlowReqLong(long)
 }
 
+// 设置超时时间
+// 内部调用DefaultClient
+func SetTimeOut(timeout time.Duration) {
+	if nil != DefaultClient.Client {
+		DefaultClient.Client.Timeout = timeout
+	}
+}
 
 // 处理请求，内部调用DefaultClient
 func DoRequest(req Request) (*Response, error) {

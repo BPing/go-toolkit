@@ -1,9 +1,9 @@
 package client
 
 import (
-	"testing"
-	"net/http"
 	"fmt"
+	"net/http"
+	"testing"
 )
 
 type TestRequest struct {

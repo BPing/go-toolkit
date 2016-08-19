@@ -1,9 +1,9 @@
 package client
 
 import (
-	"net/http"
-	"fmt"
 	"errors"
+	"fmt"
+	"net/http"
 )
 
 //
@@ -19,7 +19,6 @@ type Request interface {
 }
 
 type BaseRequest struct {
-
 }
 
 func (b *BaseRequest) HttpRequest() (req *http.Request, err error) {

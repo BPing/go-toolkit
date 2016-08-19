@@ -1,20 +1,21 @@
 package client
 
 import (
-	"net/http"
 	"compress/gzip"
-	"io/ioutil"
 	"encoding/json"
 	"encoding/xml"
-	"os"
+	"errors"
 	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
 )
 
 type ResponseFormat string
 
 const (
 	JSONResponseFormat = ResponseFormat("JSON")
-	XMLResponseFormat = ResponseFormat("XML")
+	XMLResponseFormat  = ResponseFormat("XML")
 )
 
 // 封装标准库中的Response
@@ -47,7 +48,7 @@ func (resp *Response) Bytes() ([]byte, error) {
 	}
 
 	if resp.Response.Body == nil {
-		return nil, nil
+		return nil, errors.New("body is nil")
 	}
 
 	var err error
