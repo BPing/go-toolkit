@@ -27,47 +27,49 @@ type PoolConfig struct {
 //  pool.Put() 重新放回池中
 type Pool struct {
 	config PoolConfig
-	pool   chan *idleConn
+	pool   chan redis.Conn
 	df     func(config PoolConfig) (redis.Conn, error)
 }
 
 // 新建池
 //
 // 例子：
-//   dialFunc := func(config PoolConfig) (c redis.Conn, err error) {
-//	c, err = redis.Dial(config.Network, config.Address)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	if config.password != "" {
-//		if _, err := c.Do("AUTH", config.Password); err != nil {
-//			c.Close()
-//			return nil, err
-//		}
-//	}
-//
-//	_, selecterr := c.Do("SELECT", config.DbNum)
-//	if selecterr != nil {
-//		c.Close()
-//		return nil, selecterr
-//	}
-//	return
-//     }
-//
-//     config=PoolConfig{
-//            Network  :"tcp",
-//	      Address  :   "127.0.0.1:6379",
-//	      MaxIdle  :10,
-//	      Password :"123456",
-//	      DbNum    :0,
-//	      Df       :dialFunc,
-//     }
+/*         dialFunc := func(config PoolConfig) (c redis.Conn, err error) {
+		c, err = redis.Dial(config.Network, config.Address)
+		if err != nil {
+			return nil, err
+		}
+
+		if config.Password != "" {
+			if _, err := c.Do("AUTH", config.Password); err != nil {
+				c.Close()
+				return nil, err
+			}
+		}
+
+		_, selecterr := c.Do("SELECT", config.DbNum)
+		if selecterr != nil {
+			c.Close()
+			return nil, selecterr
+		}
+		       return
+		}
+
+		config := PoolConfig{
+			Network  :"tcp",
+			Address  : "127.0.0.1:6379",
+			MaxIdle  :10,
+			Password :"123456",
+			DbNum    :0,
+			Df       :dialFunc,
+		}
+
+		*/
 //
 // 	p, _ := NewPool(config)
 //
 func NewPool(config PoolConfig) (*Pool, error) {
-	pool := make([]*redis.Conn, 0, config.MaxIdle)
+	pool := make([]redis.Conn, 0, config.MaxIdle)
 	for i := 0; i < config.MaxIdle; i++ {
 		client, err := config.Df(config)
 		if err != nil {
@@ -77,12 +79,12 @@ func NewPool(config PoolConfig) (*Pool, error) {
 			return nil, err
 		}
 		if client != nil {
-			pool = append(pool, client)
+			pool = append(pool, &idleConn{client, time.Now()})
 		}
 	}
 	p := Pool{
 		config:config,
-		pool:    make(chan *redis.Conn, config.MaxIdle),
+		pool:    make(chan redis.Conn, config.MaxIdle),
 		df:      config.Df,
 	}
 	for i := range pool {

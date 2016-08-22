@@ -62,8 +62,8 @@ import (
 
 // 内部使用了池功能
 type RedisPool struct {
-	pool   *Pool
-	record func(tag, msg string)
+	pool *Pool
+	//record func(tag, msg string)
 }
 
 // 新建
@@ -75,16 +75,16 @@ func NewRedisPool(config PoolConfig) (*RedisPool, error) {
 	return &RedisPool{pool}, nil
 }
 
-func (rp *RedisPool) SetRecord(record func(tag, msg string)) {
-	rp.record = record
-}
-
-// 记录信息
-func (rp *RedisPool) log(tag, msg string) {
-	if nil != rp.record {
-		rp.record(tag, msg)
-	}
-}
+//func (rp *RedisPool) SetRecord(record func(tag, msg string)) {
+//	rp.record = record
+//}
+//
+//// 记录信息
+//func (rp *RedisPool) log(tag, msg string) {
+//	if nil != rp.record {
+//		rp.record(tag, msg)
+//	}
+//}
 
 // 关闭
 // 清空内部连接池
@@ -134,59 +134,74 @@ func (rp *RedisPool) PutConn(conn redis.Conn) error {
 // 字符串类型相关命令操作
 //----------------------------------------------------------------------------------------------------------------------
 
+const (
+	okResp = "OK"
+)
+
 // 获取指定 key 的值。（string（字符串））
 // 如果key不存在或者有异常则返回空字符串
-func (rp *RedisPool) Get(key string) string {
-	v, err := redis.String(rp.Do("GET", key))
-	if nil != err {
-		rp.log("error", "Get::" + err.Error())
-	}
-	return v
+func (rp *RedisPool) Get(key string) (string, error) {
+	return redis.String(rp.Do("GET", key))
 }
 
 // 设置指定 key 的值
 // 注意：一个键最大能存储512MB。
-func (rp *RedisPool) Set(key, val string) bool {
-	return true
+func (rp *RedisPool) Set(key, val string) error {
+	v, err := redis.String(rp.Do("SET", key, val))
+	if nil == err&&v == okResp {
+		return nil
+	} else if nil == err {
+		return errors.New("not ok")
+	}
+	return err
 }
 
 // SETEX key seconds value 将值 value 关联到 key ，
 // 并将 key 的过期时间设为 seconds (以秒为单位)。
 // @expired 有效时长 (以秒为单位)
-func (rp *RedisPool) SetEx(key, val string, expired int64) bool {
-	return true
+func (rp *RedisPool) SetEx(key, val string, expired int64) error {
+	v, err := redis.String(rp.Do("SETEX", key, expired, val))
+	if nil == err&&v == okResp {
+		return nil
+	} else if nil == err {
+		return errors.New("not ok")
+	}
+	return err
 }
 
 // EXPIRE key seconds 为给定 key 设置过期时间。(以秒为单位)。
-func (rp *RedisPool) Expire(key string, expired int64) bool {
-	return true
+func (rp *RedisPool) Expire(key string, expired int64) (int, error) {
+	return redis.Int(rp.Do("EXPIRE", key, expired))
 }
 
-//PEXPIRE key milliseconds 设置 key 的过期时间亿以毫秒计。
-func (rp *RedisPool) PExpire(key string, expired int64) bool {
-	return true
+// PEXPIRE key milliseconds 设置 key 的过期时间亿以毫秒计。
+func (rp *RedisPool) PExpire(key string, expired int64) (int, error) {
+	return redis.Int(rp.Do("PEXPIRE", key, expired))
 }
 
 // 删除指定 key 的值
-func (rp *RedisPool) Del(key string) bool {
-	return true
+// @return 返回删除个数。
+func (rp *RedisPool) Del(key string) (int, error) {
+	return redis.Int(rp.Do("DEL", key))
 }
 
-
 // INCR key 将 key 中储存的数字值增一。
-func (rp *RedisPool) Incr(key string) bool {
-	return true
+// @return int64 增一之后的数字值
+func (rp *RedisPool) Incr(key string) (int64, error) {
+	return redis.Int64(rp.Do("INCR", key))
 }
 
 // DECR key 将 key 中储存的数字值减一。
-func (rp *RedisPool) Decr(key string) bool {
-	return true
+// @return int64 减一之后的数字值
+func (rp *RedisPool) Decr(key string) (int64, error) {
+	return redis.Int64(rp.Do("DECR", key))
 }
 
 // APPEND key value 如果 key 已经存在并且是一个字符串，
 // APPEND 命令将 value 追加到 key 原来的值的末尾。
-func (rp *RedisPool) Append(key, val string) bool {
-	return true
+// 否则，新建key/value
+func (rp *RedisPool) Append(key, val string) (int, error) {
+	return redis.Int(rp.Do("APPEND", key, val))
 }
 
 
@@ -198,28 +213,52 @@ func (rp *RedisPool) Append(key, val string) bool {
 
 // HGET key field 获取存储在哈希表中指定字段的值
 // 如果key或field不存在或者有异常则返回空字符串
-func (rp *RedisPool) HGet(key, field string) string {
-	return ""
+func (rp *RedisPool) HGet(key, field string) (string, error) {
+	return redis.String(rp.Do("HGet", key, field))
 }
 
 // HSET key field value 将哈希表 key 中的字段 field 的值设为 value
-func (rp *RedisPool) HSet(key, field, value string) bool {
-	return true
+func (rp *RedisPool) HSet(key, field, value string) (int, error) {
+	return redis.Int(rp.Do("HSET", key, field, value))
+}
+
+// HMSET key field1 value1 [field2 value2 ]
+// 同时将多个 field-value (域-值)对设置到哈希表 key 中。
+func (rp *RedisPool) HMSet(key string, field_value... interface{}) error {
+	args := append([]interface{}{key}, field_value...)
+	v, err := redis.String(rp.Do("HMSET", args...))
+	if nil == err&&v == okResp {
+		return nil
+	} else if nil == err {
+		return errors.New("not ok")
+	}
+	return err
 }
 
 // HDEL key field2 [field2] 删除一个或多个哈希表字段
-func (rp *RedisPool) HDel(key string, field... string) bool {
-	return true
+func (rp *RedisPool) HDel(key string, field... interface{}) (int, error) {
+	return redis.Int(rp.Do("HDEL", append([]interface{}{key}, field...)...))
 }
 
 // HGETALL key 获取在哈希表中指定 key 的所有字段和值
-func (rp *RedisPool) HGetAll(key string) map[string]string {
-	return nil
+func (rp *RedisPool) HGetAll(key string) (map[string]string, error) {
+	v, err := redis.Strings(rp.Do("HGETALL", key))
+	if nil == err {
+		redisMap := make(map[string]string)
+		mapLen := len(v)
+		for index := 0; index < mapLen; index += 2 {
+			redisMap[v[index]] = v[index + 1]
+		}
+		return redisMap, nil
+	}
+
+	return nil, err
+
 }
 
 // HLEN key 获取哈希表中字段的数量
-func (rp *RedisPool) HLen(key string) int32 {
-	return 0
+func (rp *RedisPool) HLen(key string) (int, error) {
+	return redis.Int(rp.Do("HLEN", key))
 }
 
 
