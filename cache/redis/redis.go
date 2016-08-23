@@ -58,6 +58,11 @@ package redis
 import (
 	"github.com/garyburd/redigo/redis"
 	"errors"
+	"encoding/json"
+)
+
+var (
+	ErrNil = redis.ErrNil
 )
 
 // 内部使用了池功能
@@ -202,6 +207,40 @@ func (rp *RedisPool) Decr(key string) (int64, error) {
 // 否则，新建key/value
 func (rp *RedisPool) Append(key, val string) (int, error) {
 	return redis.Int(rp.Do("APPEND", key, val))
+}
+
+
+//json
+//@see Get()
+func (rp *RedisPool) GetJson(key string, reply interface{}) (err error) {
+	rstr, err := rp.Get(key)
+	if nil != err{
+		return err
+	}
+	err = json.Unmarshal([]byte(rstr), reply)
+	return
+}
+
+//json
+//@see Set()
+func (rp *RedisPool) SetJson(key string, val interface{}) (err error) {
+	dec, err := json.Marshal(val)
+	if nil != err {
+		return err
+	}
+	err = rp.Set(key, string(dec))
+	return
+}
+
+//json
+//@see SetEx()
+func (rp *RedisPool) SetExJson(key string, val interface{}, expired int64) (err error) {
+	dec, err := json.Marshal(val)
+	if nil != err {
+		return err
+	}
+	err = rp.SetEx(key, string(dec), expired)
+	return
 }
 
 

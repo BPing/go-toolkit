@@ -115,12 +115,61 @@ func TestRedisPoolString(t *testing.T) {
 		t.Fatal("SetEx fail" + err.Error())
 	}
 	time.Sleep(time.Millisecond * 1100)
-	str, _ = reidsPool.Get(testKey)
+	str, err = reidsPool.Get(testKey)
+	fmt.Println(err)
 	if str == testValStr {
-		t.Fatal("SetEx fail")
+		t.Fatal("SetEx fail", err)
 	}
 
 	reidsPool.Del(testKey)
+}
+
+func TestRedisPoolStringJson(t *testing.T) {
+	if nil == reidsPool {
+		t.Fatal("reidsPool is nil")
+	}
+
+	testKey := "testKeyJson"
+	testStrVal := "testStrVal"
+	type testStruct struct {
+		Test1 string
+		Test2 bool
+		Test3 int
+	}
+	testStructVal := testStruct{"hello", true, 99}
+
+	err := reidsPool.SetJson(testKey, testStrVal)
+	if nil != err {
+		t.Fatal("SetJson fail:" + err.Error())
+	}
+
+	var testReply string
+	err = reidsPool.GetJson(testKey, &testReply)
+	if nil != err {
+		t.Fatal("GetJson fail:" + err.Error())
+	}
+	fmt.Println("testReply:", testReply)
+
+	err = reidsPool.SetExJson(testKey, testStructVal, 1)
+	if nil != err {
+		t.Fatal("SetExJson fail:" + err.Error())
+	}
+
+	var testReplyStruct testStruct
+	err = reidsPool.GetJson(testKey, &testReplyStruct)
+	if nil != err {
+		t.Fatal("SetExJson fail:" + err.Error())
+	}
+	fmt.Println("testReplyStruct:", testReplyStruct)
+
+	time.Sleep(time.Millisecond * 1100)
+
+	err = reidsPool.GetJson(testKey, &testReplyStruct)
+	if nil != err && ErrNil != err {
+		t.Fatal("SetExJson fail:" + err.Error())
+	}
+	fmt.Println("testReplyStruct:", testReplyStruct)
+
 }
 
 func TestRedisPoolMap(t *testing.T) {
