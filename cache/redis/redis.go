@@ -63,11 +63,13 @@ import (
 
 var (
 	ErrNil = redis.ErrNil
+	ErrPowerOn = errors.New("RedisPool:turn on first")
 )
 
 // 内部使用了池功能
 type RedisPool struct {
-	pool *Pool
+	pool    *Pool
+	powerOn bool
 	//record func(tag, msg string)
 }
 
@@ -77,12 +79,13 @@ func NewRedisPool(config PoolConfig) (*RedisPool, error) {
 	if nil != err {
 		return nil, err
 	}
-	return &RedisPool{pool}, nil
+	return &RedisPool{pool, true}, nil
 }
 
-//func (rp *RedisPool) SetRecord(record func(tag, msg string)) {
-//	rp.record = record
-//}
+func (rp *RedisPool) SetPowerOn(powerOn bool) *RedisPool {
+	rp.powerOn = powerOn
+	return rp
+}
 //
 //// 记录信息
 //func (rp *RedisPool) log(tag, msg string) {
@@ -104,8 +107,11 @@ func (rp *RedisPool) Close() error {
 // 调用有效连接redis.Conn的Do方法
 // 此方法处理连接池连接的取出和放回等额外的相关工作
 func (rp *RedisPool)Do(commandName string, args ...interface{}) (reply interface{}, err error) {
+	if !rp.powerOn {
+		return nil, ErrPowerOn
+	}
 	if nil == rp.pool {
-		return nil, errors.New("please create a redis pool first")
+		return nil, errors.New("RedisPool:please create a redis pool first")
 	}
 	conn, err := rp.pool.Get()
 	if nil != err {
@@ -214,7 +220,7 @@ func (rp *RedisPool) Append(key, val string) (int, error) {
 //@see Get()
 func (rp *RedisPool) GetJson(key string, reply interface{}) (err error) {
 	rstr, err := rp.Get(key)
-	if nil != err{
+	if nil != err {
 		return err
 	}
 	err = json.Unmarshal([]byte(rstr), reply)

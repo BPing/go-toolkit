@@ -3,6 +3,7 @@ package redis
 import (
 	"time"
 	"github.com/garyburd/redigo/redis"
+	"errors"
 )
 
 // 配置信息
@@ -69,6 +70,9 @@ type Pool struct {
 // 	p, _ := NewPool(config)
 //
 func NewPool(config PoolConfig) (*Pool, error) {
+	if config.Df == nil {
+		return nil, errors.New("dialFunc is nil")
+	}
 	pool := make([]redis.Conn, 0, config.MaxIdle)
 	for i := 0; i < config.MaxIdle; i++ {
 		client, err := config.Df(config)
