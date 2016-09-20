@@ -56,13 +56,13 @@
 package redis
 
 import (
-	"github.com/garyburd/redigo/redis"
-	"errors"
 	"encoding/json"
+	"errors"
+	"github.com/garyburd/redigo/redis"
 )
 
 var (
-	ErrNil = redis.ErrNil
+	ErrNil     = redis.ErrNil
 	ErrPowerOn = errors.New("RedisPool:turn on first")
 )
 
@@ -86,6 +86,7 @@ func (rp *RedisPool) SetPowerOn(powerOn bool) *RedisPool {
 	rp.powerOn = powerOn
 	return rp
 }
+
 //
 //// 记录信息
 //func (rp *RedisPool) log(tag, msg string) {
@@ -106,7 +107,7 @@ func (rp *RedisPool) Close() error {
 // 从池中获取空闲（或者新建）连接处理redis命令操作
 // 调用有效连接redis.Conn的Do方法
 // 此方法处理连接池连接的取出和放回等额外的相关工作
-func (rp *RedisPool)Do(commandName string, args ...interface{}) (reply interface{}, err error) {
+func (rp *RedisPool) Do(commandName string, args ...interface{}) (reply interface{}, err error) {
 	if !rp.powerOn {
 		return nil, ErrPowerOn
 	}
@@ -117,7 +118,7 @@ func (rp *RedisPool)Do(commandName string, args ...interface{}) (reply interface
 	if nil != err {
 		return
 	}
-	reply, err = conn.Do(commandName, args ...)
+	reply, err = conn.Do(commandName, args...)
 	rp.pool.Put(conn)
 	return
 }
@@ -159,7 +160,7 @@ func (rp *RedisPool) Get(key string) (string, error) {
 // 注意：一个键最大能存储512MB。
 func (rp *RedisPool) Set(key, val string) error {
 	v, err := redis.String(rp.Do("SET", key, val))
-	if nil == err&&v == okResp {
+	if nil == err && v == okResp {
 		return nil
 	} else if nil == err {
 		return errors.New("not ok")
@@ -172,7 +173,7 @@ func (rp *RedisPool) Set(key, val string) error {
 // @expired 有效时长 (以秒为单位)
 func (rp *RedisPool) SetEx(key, val string, expired int64) error {
 	v, err := redis.String(rp.Do("SETEX", key, expired, val))
-	if nil == err&&v == okResp {
+	if nil == err && v == okResp {
 		return nil
 	} else if nil == err {
 		return errors.New("not ok")
@@ -215,7 +216,6 @@ func (rp *RedisPool) Append(key, val string) (int, error) {
 	return redis.Int(rp.Do("APPEND", key, val))
 }
 
-
 //json
 //@see Get()
 func (rp *RedisPool) GetJson(key string, reply interface{}) (err error) {
@@ -249,7 +249,6 @@ func (rp *RedisPool) SetExJson(key string, val interface{}, expired int64) (err 
 	return
 }
 
-
 // 哈希(Hash)类型相关命令操作
 //
 // Redis hash 是一个string类型的field和value的映射表，hash特别适合用于存储对象。
@@ -269,10 +268,10 @@ func (rp *RedisPool) HSet(key, field, value string) (int, error) {
 
 // HMSET key field1 value1 [field2 value2 ]
 // 同时将多个 field-value (域-值)对设置到哈希表 key 中。
-func (rp *RedisPool) HMSet(key string, field_value... interface{}) error {
+func (rp *RedisPool) HMSet(key string, field_value ...interface{}) error {
 	args := append([]interface{}{key}, field_value...)
 	v, err := redis.String(rp.Do("HMSET", args...))
-	if nil == err&&v == okResp {
+	if nil == err && v == okResp {
 		return nil
 	} else if nil == err {
 		return errors.New("not ok")
@@ -281,7 +280,7 @@ func (rp *RedisPool) HMSet(key string, field_value... interface{}) error {
 }
 
 // HDEL key field2 [field2] 删除一个或多个哈希表字段
-func (rp *RedisPool) HDel(key string, field... interface{}) (int, error) {
+func (rp *RedisPool) HDel(key string, field ...interface{}) (int, error) {
 	return redis.Int(rp.Do("HDEL", append([]interface{}{key}, field...)...))
 }
 
@@ -292,7 +291,7 @@ func (rp *RedisPool) HGetAll(key string) (map[string]string, error) {
 		redisMap := make(map[string]string)
 		mapLen := len(v)
 		for index := 0; index < mapLen; index += 2 {
-			redisMap[v[index]] = v[index + 1]
+			redisMap[v[index]] = v[index+1]
 		}
 		return redisMap, nil
 	}
@@ -305,7 +304,6 @@ func (rp *RedisPool) HGetAll(key string) (map[string]string, error) {
 func (rp *RedisPool) HLen(key string) (int, error) {
 	return redis.Int(rp.Do("HLEN", key))
 }
-
 
 // 列表类型相关命令操作
 //

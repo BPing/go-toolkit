@@ -1,9 +1,9 @@
 package redis
 
 import (
-	"testing"
-	"github.com/garyburd/redigo/redis"
 	"fmt"
+	"github.com/garyburd/redigo/redis"
+	"testing"
 	"time"
 )
 
@@ -34,12 +34,12 @@ func init() {
 	}
 
 	config := PoolConfig{
-		Network  :"tcp",
-		Address  : "127.0.0.1:6379",
-		MaxIdle  :10,
-		Password :"",
-		DbNum    :0,
-		Df       :dialFunc,
+		Network:  "tcp",
+		Address:  "127.0.0.1:6379",
+		MaxIdle:  10,
+		Password: "",
+		DbNum:    0,
+		Df:       dialFunc,
 	}
 
 	reidsPool, errP = NewRedisPool(config)
@@ -70,7 +70,7 @@ func TestRedisPoolString(t *testing.T) {
 	reidsPool.Set(testKey, fmt.Sprintf("%d", testValNum))
 
 	num, err := reidsPool.Decr(testKey)
-	if num != testValNum - 1 || err != nil {
+	if num != testValNum-1 || err != nil {
 		t.Fatal("Decr fail")
 	}
 
