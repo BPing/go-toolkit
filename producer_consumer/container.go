@@ -1,6 +1,9 @@
 package producerConsumer
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 // 容器
 // 实现基于生产/消费模式
@@ -19,6 +22,11 @@ type Container struct {
 	// 建议长度大于等于1，
 	// 使用有缓冲的channel
 	msgList chan Message
+
+	// 空闲存活时间（针对AssistRunner）
+	// 当协助消费协程空闲时间超过此
+	// 限定时间，则被关闭。默认为1s
+	assistIdleKeepAlive time.Duration
 }
 
 // 消息结构体
@@ -53,7 +61,7 @@ func NewContainerPC(chanLen int, consumeFunc func(Message)) (*Container, error) 
 		return nil, ChanLenErr
 	}
 
-	return &Container{consumeFunc: consumeFunc, msgList: make(chan Message, chanLen)}, nil
+	return &Container{consumeFunc: consumeFunc, msgList: make(chan Message, chanLen), assistIdleKeepAlive: time.Second}, nil
 }
 
 // 新建消息体
@@ -62,6 +70,13 @@ func NewMessage(id string, body interface{}) (Message, error) {
 		return Message{}, MessageIDNilErr
 	}
 	return Message{id, body}, nil
+}
+
+// 设置空闲存活时间
+func (c *Container) SetAssistIdleKeepAlive(timeout time.Duration) {
+	if timeout > 0 {
+		c.assistIdleKeepAlive = timeout
+	}
 }
 
 // 生产
@@ -79,6 +94,8 @@ func (c *Container) Produce(msg Message) error {
 }
 
 // 消费
+// 一般调用一次即可
+// 因为每一次调用都会开启一个主消费协程
 func (c *Container) Consume() error {
 	if nil == c.msgList {
 		return MsgListNilErr
@@ -100,24 +117,28 @@ func (c *Container) consume(master bool) {
 				// 一直消费消息，如果队列没有消息，则阻塞等待
 				msg = <-c.msgList
 				if nil != c.consumeFunc && msg.Id != "" {
-					msg.Id = "主要" + msg.Id
+					//debug msg.Id = "主要" + msg.Id
 					c.consumeFunc(msg)
 				}
 			}
 		}()
 	} else {
-		//协助消费协程
+		if c.assistIdleKeepAlive <= 0 {
+			// 默认一秒
+			c.assistIdleKeepAlive = time.Second
+		}
+		// 协助消费协程
 		go func() {
 			var msg Message
 			for {
 				select {
 				case msg = <-c.msgList:
 					if nil != c.consumeFunc && msg.Id != "" {
-						msg.Id = "协助" + msg.Id
+						//debug msg.Id = "协助" + msg.Id
 						c.consumeFunc(msg)
 					}
-				default:
-					//如果队列没有消息，此协程协助使命结束
+				case <-time.After(c.assistIdleKeepAlive):
+					//如果队列没有消息，空闲时间超过c.assistIdleKeepAlive，此协程协助使命结束
 					return
 				}
 			}
