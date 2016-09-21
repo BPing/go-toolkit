@@ -54,6 +54,9 @@ type Client struct {
 	// 记录信息；如日志记录
 	Record func(tag, msg string)
 
+	// 和http.Client.Timeout相关
+	Timeout time.Duration
+
 	//版本号
 	Version string
 	//
@@ -66,6 +69,10 @@ func (c *Client) SetDebug(debug bool) {
 
 func (c *Client) SetRecord(record func(tag, msg string)) {
 	c.Record = record
+}
+
+func (c *Client) SetTimeOut(timeout time.Duration) {
+	c.Timeout = timeout
 }
 
 func (c *Client) SetSlowReqLong(long time.Duration) {
@@ -104,6 +111,12 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	if nil == req {
 		return nil, errors.New("Request is nil")
 	}
+        // 超时时间设置
+	timeout := req.GetTimeOut()
+	if timeout < 0 {
+		timeout = c.Timeout
+	}
+	c.Client.Timeout = timeout
 
 	httpReq, err := req.HttpRequest()
 	if nil != err {
@@ -184,9 +197,7 @@ func SetSlowReqLong(long time.Duration) {
 // 设置超时时间
 // 内部调用DefaultClient
 func SetTimeOut(timeout time.Duration) {
-	if nil != DefaultClient.Client {
-		DefaultClient.Client.Timeout = timeout
-	}
+	DefaultClient.SetTimeOut(timeout)
 }
 
 // 处理请求，内部调用DefaultClient

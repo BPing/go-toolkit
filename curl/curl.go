@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/BPing/Golib/curl/client"
+	"time"
 )
 
 const (
@@ -52,6 +53,12 @@ type CurlRequest struct {
 
 	// body不为nil,则params附带到Url上
 	Body []byte
+
+	// 超时时间
+	// =0代表此请求不启用超时设置
+	// <0代表默认使用全局
+	// >0代表自定义超时时间
+	Timeout time.Duration
 }
 
 //
@@ -97,6 +104,10 @@ func (curl *CurlRequest) String() string {
 	return fmt.Sprintf("\n Url:%s, \n Method:%s,\n Header:%#v,\n Params:%#v,\n Body:%v \n", curl.Url, curl.Method, curl.Headers, curl.Params, string(curl.Body))
 }
 
+func (curl *CurlRequest) GetTimeOut() time.Duration {
+	return curl.Timeout
+}
+
 //func (curl *CurlRequest) Clone() client.Request {
 //	// var newBody []byte
 //	//copy(newBody, curl.Body)
@@ -114,6 +125,12 @@ func (curl *CurlRequest) String() string {
 // @header map[string]string 头部信息
 // @body   []byte
 func Curl(url, method string, params, header map[string]string, body []byte) (resp *client.Response, err error) {
+	resp,err=CurlTimeout(url, method , params, header, body ,-1)
+	return
+}
+
+// 超时处理
+func CurlTimeout(url, method string, params, header map[string]string, body []byte,timeout time.Duration) (resp *client.Response, err error) {
 
 	curlReq := &CurlRequest{
 		Url:     url,
@@ -121,9 +138,9 @@ func Curl(url, method string, params, header map[string]string, body []byte) (re
 		Params:  params,
 		Headers: header,
 		Body:    body,
+		Timeout: timeout,
 	}
 
 	resp, err = client.DoRequest(curlReq)
-
 	return
 }
