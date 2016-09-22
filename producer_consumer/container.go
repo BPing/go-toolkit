@@ -11,6 +11,8 @@ import (
 //   1、Produce(msg interface{}) 生产信息，把消息放入消息列表中。
 //   2、Consume() 消费消息。
 //
+// 开启主线程一直消费消息，如果消息过多时（消息队列满），则会开启协助协程消费消息。
+// 协助协程将会在消息队列持续为空一段的时间后关闭.
 type Container struct {
 	// 消费信息的函数
 	// 信息体最终落到此函数处理
@@ -36,6 +38,7 @@ type Message struct {
 	// 否则会被当做无效数据抛弃。
 	Id string
 	// 实体内容
+	// 用户自定义的消息具体信息内容
 	Body interface{}
 }
 
@@ -80,7 +83,7 @@ func (c *Container) SetAssistIdleKeepAlive(timeout time.Duration) {
 }
 
 // 生产
-// 如果队列已满，开启新消费协程
+// 如果队列已满，开启新协助协程消费消息
 func (c *Container) Produce(msg Message) error {
 	if nil == c.msgList {
 		return MsgListNilErr
@@ -88,7 +91,7 @@ func (c *Container) Produce(msg Message) error {
 	select {
 	case c.msgList <- msg:
 	default:
-		c.consume(AssistRunner)
+		c.consume(AssistRunner,&msg)
 	}
 	return nil
 }
@@ -100,7 +103,7 @@ func (c *Container) Consume() error {
 	if nil == c.msgList {
 		return MsgListNilErr
 	}
-	c.consume(MasterRunner)
+	c.consume(MasterRunner,nil)
 	return nil
 }
 
@@ -108,7 +111,8 @@ func (c *Container) Consume() error {
 // @master 是否主要消费协程。
 //         主要消费协程一直执行
 //         协助协程是在消息过多的时候开启，在没有消息体的时候结束。
-func (c *Container) consume(master bool) {
+// @argMsg 队列已满，放不进去的消息，协助协程消费的第一个消息。
+func (c *Container) consume(master bool,argMsg *Message) {
 	if master == MasterRunner {
 		// 主要消费协程
 		go func() {
@@ -129,6 +133,10 @@ func (c *Container) consume(master bool) {
 		}
 		// 协助消费协程
 		go func() {
+			//先消费放不进队列的消息
+			if nil != c.consumeFunc &&nil!=argMsg&&argMsg.Id != "" {
+				c.consumeFunc(*argMsg)
+			}
 			var msg Message
 			for {
 				select {
