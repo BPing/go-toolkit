@@ -111,7 +111,7 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	if nil == req {
 		return nil, errors.New("Request is nil")
 	}
-        // 超时时间设置
+	// 超时时间设置
 	timeout := req.GetTimeOut()
 	if timeout < 0 {
 		timeout = c.Timeout

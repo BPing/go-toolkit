@@ -125,12 +125,12 @@ func (curl *CurlRequest) GetTimeOut() time.Duration {
 // @header map[string]string 头部信息
 // @body   []byte
 func Curl(url, method string, params, header map[string]string, body []byte) (resp *client.Response, err error) {
-	resp,err=CurlTimeout(url, method , params, header, body ,-1)
+	resp, err = CurlTimeout(url, method, params, header, body, -1)
 	return
 }
 
 // 超时处理
-func CurlTimeout(url, method string, params, header map[string]string, body []byte,timeout time.Duration) (resp *client.Response, err error) {
+func CurlTimeout(url, method string, params, header map[string]string, body []byte, timeout time.Duration) (resp *client.Response, err error) {
 
 	curlReq := &CurlRequest{
 		Url:     url,
