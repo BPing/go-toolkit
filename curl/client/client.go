@@ -111,12 +111,6 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	if nil == req {
 		return nil, errors.New("Request is nil")
 	}
-	// 超时时间设置
-	timeout := req.GetTimeOut()
-	if timeout < 0 {
-		timeout = c.Timeout
-	}
-	c.Client.Timeout = timeout
 
 	httpReq, err := req.HttpRequest()
 	if nil != err {
@@ -125,6 +119,17 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 
 	//必要头部信息设置
 	httpReq.Header.Set("User-Agent", `Bping-Curl-`+c.UserAgent+"/"+c.Version)
+
+	// 超时时间设置
+	// XXX:并发下同步未做处理。
+	// 会混乱被覆盖，未能按照预期执行
+	// 建议client使用统一超时时间即可，
+	// 不必细化到每一个request中去
+	timeout := req.GetTimeOut()
+	if timeout < 0 {
+		timeout = c.Timeout
+	}
+	c.Client.Timeout = timeout
 
 	t0 := time.Now()
 	httpResp, err := c.Client.Do(httpReq)
