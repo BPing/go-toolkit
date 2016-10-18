@@ -2,6 +2,7 @@ package producerConsumer
 
 import (
 	"errors"
+	"sync/atomic"
 	"time"
 )
 
@@ -29,6 +30,12 @@ type Container struct {
 	// 当协助消费协程空闲时间超过此
 	// 限定时间，则被关闭。默认为1s
 	assistIdleKeepAlive time.Duration
+
+	// 活跃协助消费协程数目
+	assistActiveNum int64
+
+	// 主消费协程数目
+	masterNum int64
 }
 
 // 消息结构体
@@ -36,6 +43,8 @@ type Message struct {
 	// 标识
 	// 此字段不能为空，
 	// 否则会被当做无效数据抛弃。
+	// 容器不对此标识的唯一性感兴趣。
+	// 用户可以自行确保此标识的唯一性
 	Id string
 	// 实体内容
 	// 用户自定义的消息具体信息内容
@@ -91,7 +100,7 @@ func (c *Container) Produce(msg Message) error {
 	select {
 	case c.msgList <- msg:
 	default:
-		c.consume(AssistRunner,&msg)
+		c.consume(AssistRunner, &msg)
 	}
 	return nil
 }
@@ -103,7 +112,7 @@ func (c *Container) Consume() error {
 	if nil == c.msgList {
 		return MsgListNilErr
 	}
-	c.consume(MasterRunner,nil)
+	c.consume(MasterRunner, nil)
 	return nil
 }
 
@@ -112,10 +121,11 @@ func (c *Container) Consume() error {
 //         主要消费协程一直执行
 //         协助协程是在消息过多的时候开启，在没有消息体的时候结束。
 // @argMsg 队列已满，放不进去的消息，协助协程消费的第一个消息。
-func (c *Container) consume(master bool,argMsg *Message) {
+func (c *Container) consume(master bool, argMsg *Message) {
 	if master == MasterRunner {
 		// 主要消费协程
 		go func() {
+			defer c.catch(MasterRunner)
 			var msg Message
 			for {
 				// 一直消费消息，如果队列没有消息，则阻塞等待
@@ -126,15 +136,18 @@ func (c *Container) consume(master bool,argMsg *Message) {
 				}
 			}
 		}()
+		atomic.AddInt64(&c.masterNum, 1)
 	} else {
 		if c.assistIdleKeepAlive <= 0 {
 			// 默认一秒
 			c.assistIdleKeepAlive = time.Second
 		}
+		atomic.AddInt64(&c.assistActiveNum, 1)
 		// 协助消费协程
 		go func() {
+			defer c.catch(AssistRunner)
 			//先消费放不进队列的消息
-			if nil != c.consumeFunc &&nil!=argMsg&&argMsg.Id != "" {
+			if nil != c.consumeFunc && nil != argMsg && argMsg.Id != "" {
 				c.consumeFunc(*argMsg)
 			}
 			var msg Message
@@ -153,4 +166,29 @@ func (c *Container) consume(master bool,argMsg *Message) {
 		}()
 	}
 
+}
+
+// 协程收尾工作，比如：捕捉异常、主要协程恢复
+func (c *Container) catch(master bool) {
+	if master == MasterRunner {
+		atomic.AddInt64(&c.masterNum, -1)
+	} else {
+		atomic.AddInt64(&c.assistActiveNum, -1)
+	}
+	if err := recover(); err != nil {
+		if master == MasterRunner {
+			// 开启新的主要协程
+			c.Consume()
+		}
+	}
+}
+
+// 或者活跃消费协程数目
+// @return
+//     master ：主要
+//     assistActive：协助
+func (c *Container) NumGoroutine() (master, assistActive int64) {
+	master = atomic.LoadInt64(&c.masterNum)
+	assistActive = atomic.LoadInt64(&c.assistActiveNum)
+	return
 }
