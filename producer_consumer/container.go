@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync/atomic"
 	"time"
+	"runtime"
 )
 
 // 容器
@@ -18,13 +19,13 @@ type Container struct {
 	// 消费信息的函数
 	// 信息体最终落到此函数处理
 	// 由用户自定义函数实体内容
-	consumeFunc func(Message)
+	consumeFunc func(IMessage)
 
 	// 消息体队列存放的channel
 	// 长度由用户自定义
 	// 建议长度大于等于1，
 	// 使用有缓冲的channel
-	msgList chan Message
+	msgList chan IMessage
 
 	// 空闲存活时间（针对AssistRunner）
 	// 当协助消费协程空闲时间超过此
@@ -38,18 +39,7 @@ type Container struct {
 	masterNum int64
 }
 
-// 消息结构体
-type Message struct {
-	// 标识
-	// 此字段不能为空，
-	// 否则会被当做无效数据抛弃。
-	// 容器不对此标识的唯一性感兴趣。
-	// 用户可以自行确保此标识的唯一性
-	Id string
-	// 实体内容
-	// 用户自定义的消息具体信息内容
-	Body interface{}
-}
+
 
 const (
 	MasterRunner = true
@@ -61,11 +51,12 @@ var (
 	MsgListNilErr     = errors.New("list of message is nil ")
 	ChanLenErr        = errors.New("length of chan should be bigger than one")
 	ConsumeFuncNilErr = errors.New("func of consumer should not be nil")
-	MessageIDNilErr   = errors.New("Id of Message should not be nil")
+
+	YieldCountThreshold=10
 )
 
 // 新建生产/消费模式容器
-func NewContainerPC(chanLen int, consumeFunc func(Message)) (*Container, error) {
+func NewContainerPC(chanLen int, consumeFunc func(IMessage)) (*Container, error) {
 	if consumeFunc == nil {
 		return nil, ConsumeFuncNilErr
 	}
@@ -73,15 +64,7 @@ func NewContainerPC(chanLen int, consumeFunc func(Message)) (*Container, error) 
 		return nil, ChanLenErr
 	}
 
-	return &Container{consumeFunc: consumeFunc, msgList: make(chan Message, chanLen), assistIdleKeepAlive: time.Second}, nil
-}
-
-// 新建消息体
-func NewMessage(id string, body interface{}) (Message, error) {
-	if id == "" {
-		return Message{}, MessageIDNilErr
-	}
-	return Message{id, body}, nil
+	return &Container{consumeFunc: consumeFunc, msgList: make(chan IMessage, chanLen), assistIdleKeepAlive: time.Second}, nil
 }
 
 // 设置空闲存活时间
@@ -93,15 +76,17 @@ func (c *Container) SetAssistIdleKeepAlive(timeout time.Duration) {
 
 // 生产
 // 如果队列已满，开启新协助协程消费消息
-func (c *Container) Produce(msg Message) error {
+func (c *Container) Produce(msg IMessage) error {
 	if nil == c.msgList {
 		return MsgListNilErr
 	}
+
 	select {
 	case c.msgList <- msg:
 	default:
-		c.consume(AssistRunner, &msg)
+		c.consume(AssistRunner, msg)
 	}
+
 	return nil
 }
 
@@ -121,16 +106,16 @@ func (c *Container) Consume() error {
 //         主要消费协程一直执行
 //         协助协程是在消息过多的时候开启，在没有消息体的时候结束。
 // @argMsg 队列已满，放不进去的消息，协助协程消费的第一个消息。
-func (c *Container) consume(master bool, argMsg *Message) {
+func (c *Container) consume(master bool, argMsg IMessage) {
 	if master == MasterRunner {
 		// 主要消费协程
 		go func() {
 			defer c.catch(MasterRunner)
-			var msg Message
+			var msg IMessage
 			for {
 				// 一直消费消息，如果队列没有消息，则阻塞等待
 				msg = <-c.msgList
-				if nil != c.consumeFunc && msg.Id != "" {
+				if nil != c.consumeFunc && msg.Id() != "" {
 					//debug msg.Id = "主要" + msg.Id
 					c.consumeFunc(msg)
 				}
@@ -147,16 +132,23 @@ func (c *Container) consume(master bool, argMsg *Message) {
 		go func() {
 			defer c.catch(AssistRunner)
 			//先消费放不进队列的消息
-			if nil != c.consumeFunc && nil != argMsg && argMsg.Id != "" {
-				c.consumeFunc(*argMsg)
+			if nil != c.consumeFunc && nil != argMsg && argMsg.Id() != "" {
+				c.consumeFunc(argMsg)
 			}
-			var msg Message
+			var msg IMessage
+			yieldCount := 0
 			for {
 				select {
 				case msg = <-c.msgList:
-					if nil != c.consumeFunc && msg.Id != "" {
+					if nil != c.consumeFunc && msg.Id() != "" {
 						//debug msg.Id = "协助" + msg.Id
 						c.consumeFunc(msg)
+						if yieldCount >= YieldCountThreshold {
+							yieldCount = 0
+							runtime.Gosched()
+						} else {
+							yieldCount++
+						}
 					}
 				case <-time.After(c.assistIdleKeepAlive):
 					//如果队列没有消息，空闲时间超过c.assistIdleKeepAlive，此协程协助使命结束
