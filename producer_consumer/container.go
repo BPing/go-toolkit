@@ -2,13 +2,13 @@ package producerConsumer
 
 import (
 	"errors"
+	"runtime"
 	"sync/atomic"
 	"time"
-	"runtime"
 )
 
 // 容器
-// 实现基于生产/消费模式
+// 实现基于缓冲channel队列的生产/消费模式
 //
 //   1、Produce(msg interface{}) 生产信息，把消息放入消息列表中。
 //   2、Consume() 消费消息。
@@ -16,6 +16,7 @@ import (
 // 开启主线程一直消费消息，如果消息过多时（消息队列满），则会开启协助协程消费消息。
 // 协助协程将会在消息队列持续为空一段的时间后关闭.
 type Container struct {
+	CBaseInfo
 	// 消费信息的函数
 	// 信息体最终落到此函数处理
 	// 由用户自定义函数实体内容
@@ -31,20 +32,7 @@ type Container struct {
 	// 当协助消费协程空闲时间超过此
 	// 限定时间，则被关闭。默认为1s
 	assistIdleKeepAlive time.Duration
-
-	// 活跃协助消费协程数目
-	assistActiveNum int64
-
-	// 主消费协程数目
-	masterNum int64
 }
-
-
-
-const (
-	MasterRunner = true
-	AssistRunner = false
-)
 
 var (
 	// 错误信息
@@ -52,7 +40,7 @@ var (
 	ChanLenErr        = errors.New("length of chan should be bigger than one")
 	ConsumeFuncNilErr = errors.New("func of consumer should not be nil")
 
-	YieldCountThreshold=10
+	YieldCountThreshold = 10
 )
 
 // 新建生产/消费模式容器
@@ -112,6 +100,7 @@ func (c *Container) consume(master bool, argMsg IMessage) {
 		go func() {
 			defer c.catch(MasterRunner)
 			var msg IMessage
+			//yieldCount := 0
 			for {
 				// 一直消费消息，如果队列没有消息，则阻塞等待
 				msg = <-c.msgList
@@ -119,6 +108,12 @@ func (c *Container) consume(master bool, argMsg IMessage) {
 					//debug msg.Id = "主要" + msg.Id
 					c.consumeFunc(msg)
 				}
+				//	if yieldCount >= YieldCountThreshold {
+				//		yieldCount = 0
+				//		runtime.Gosched()
+				//	} else {
+				//		yieldCount++
+				//	}
 			}
 		}()
 		atomic.AddInt64(&c.masterNum, 1)
@@ -128,6 +123,7 @@ func (c *Container) consume(master bool, argMsg IMessage) {
 			c.assistIdleKeepAlive = time.Second
 		}
 		atomic.AddInt64(&c.assistActiveNum, 1)
+
 		// 协助消费协程
 		go func() {
 			defer c.catch(AssistRunner)
@@ -143,12 +139,12 @@ func (c *Container) consume(master bool, argMsg IMessage) {
 					if nil != c.consumeFunc && msg.Id() != "" {
 						//debug msg.Id = "协助" + msg.Id
 						c.consumeFunc(msg)
-						if yieldCount >= YieldCountThreshold {
-							yieldCount = 0
-							runtime.Gosched()
-						} else {
-							yieldCount++
-						}
+					}
+					if yieldCount >= YieldCountThreshold {
+						yieldCount = 0
+						runtime.Gosched()
+					} else {
+						yieldCount++
 					}
 				case <-time.After(c.assistIdleKeepAlive):
 					//如果队列没有消息，空闲时间超过c.assistIdleKeepAlive，此协程协助使命结束
@@ -168,6 +164,7 @@ func (c *Container) catch(master bool) {
 		atomic.AddInt64(&c.assistActiveNum, -1)
 	}
 	if err := recover(); err != nil {
+		c.record(PanicTag, err)
 		if master == MasterRunner {
 			// 开启新的主要协程
 			c.Consume()

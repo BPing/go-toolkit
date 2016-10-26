@@ -9,11 +9,11 @@ import (
 )
 
 type Message struct {
-	key string
+	Key string
 }
 
 func(msg *Message)Id()string{
-	return msg.key
+	return msg.Key
 }
 
 func NewMessage(id string)*Message{
@@ -25,7 +25,12 @@ func TestContainer(t *testing.T) {
 		fmt.Println("消费：", msg.Id(), "协程数目：", runtime.NumGoroutine())
 	}
 
-	container, _ := NewContainerPC(20, consumeFunc)
+	container, _ := NewContainer(Config{
+		Type:ChannelType,
+		MsgLen:20,
+		ConsumeFunc:consumeFunc,
+		AssistIdleKeepAlive:1,
+	})
 	container.Consume()
 
 	go func() {
@@ -59,10 +64,15 @@ func TestContainerErr(t *testing.T) {
 		fmt.Println("消费：", msg.Id(), "协程数目：", runtime.NumGoroutine())
 	}
 
-	_, err := NewContainerPC(0, consumeFunc)
+	_, err := NewContainer(Config{
+		Type:ChannelType,
+		MsgLen:0,
+		ConsumeFunc:consumeFunc,
+	})
 
+	//_, err = NewContainerPC(0, consumeFunc)
 	if err != ChanLenErr {
-		t.Fatal(ChanLenErr)
+		t.Fatal(err)
 	}
 
 	_, err = NewContainerPC(20, nil)

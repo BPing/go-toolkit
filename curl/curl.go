@@ -20,12 +20,12 @@
 package curl
 
 import (
+	"errors"
 	"fmt"
+	"github.com/BPing/Golib/curl/client"
 	"net/http"
 	"net/url"
 	"strings"
-	"github.com/BPing/Golib/curl/client"
-	"errors"
 )
 
 const (
@@ -114,15 +114,15 @@ func (curl *CurlRequest) String() string {
 // @header map[string]string 头部信息
 // @body   []byte
 func Curl(url, method string, params, header map[string]string, body []byte) (resp *client.Response, err error) {
-	resp, err = CurlWithClient(url, method , params, header, body ,client.DefaultClient)
+	resp, err = CurlWithClient(url, method, params, header, body, client.DefaultClient)
 	return
 }
 
 // 自定义的client执行curl请求
 func CurlWithClient(url, method string, params, header map[string]string, body []byte, c *client.Client) (resp *client.Response, err error) {
-         if c==nil {
-		 err=errors.New("*client.Client is nil")
-	 }
+	if c == nil {
+		err = errors.New("*client.Client is nil")
+	}
 	curlReq := &CurlRequest{
 		Url:     url,
 		Method:  method,
