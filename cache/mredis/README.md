@@ -54,6 +54,7 @@ redis.Set("cacheKey","value")
 ```
 
 * `哈希(Hash)类型相关命令操作`
+
  Redis hash 是一个string类型的field和value的映射表，hash特别适合用于存储对象。
  Redis 中每个 hash 可以存储 232 - 1 键值对（40多亿）。
   
@@ -68,4 +69,4 @@ redis.HGet("cacheKey","field")
 
 # redis
 
-* [redis 命令](#http://www.redis.net.cn/order/)
+* [redis 命令](http://www.redis.net.cn/order/)
