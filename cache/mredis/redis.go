@@ -224,6 +224,9 @@ func (rp *RedisPool) GetJson(key string, reply interface{}) (err error) {
 	if nil != err {
 		return err
 	}
+	if rstr==""{
+		return errors.New("string of value is empty")
+	}
 	err = json.Unmarshal([]byte(rstr), reply)
 	return
 }
