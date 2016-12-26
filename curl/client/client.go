@@ -137,15 +137,15 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	if nil != err {
 		return nil, err
 	}
-
+	resp = &Response{Response: httpResp}
 	if nil != c.Record {
-		reqInfo := fmt.Sprintf("http query:: %s status:%d \n ts:(%v) \n", req.String(), httpResp.StatusCode, t1.Sub(t0))
+		resStr,_:=resp.Bytes()
+		reqInfo := fmt.Sprintf("http query:: %s status:%d \n response:%s \n ts:(%v) \n", req.String(), httpResp.StatusCode,string(resStr),t1.Sub(t0))
 		if t1.Sub(t0) >= c.SlowReqLong {
 			c.Record(SlowReqRecord, reqInfo)
 		}
 		c.Record(ReqRecord, reqInfo)
 	}
-	resp = &Response{Response: httpResp}
 	return
 }
 
