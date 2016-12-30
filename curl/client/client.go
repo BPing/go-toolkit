@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	SlowReqRecord  = "SlowReqRecord"
-	ReqRecord      = "ReqRecord"
+	SlowReqRecord = "SlowReqRecord"
+	ReqRecord = "ReqRecord"
 	ErrorReqRecord = "ErrorReqRecord"
 )
 
@@ -44,7 +44,7 @@ type Client struct {
 	*http.Client
 
 	//
-	UserAgent string
+	UserAgent   string
 
 	// 超过SlowReqLong时间长度的请求，将记录为慢请求
 	// 默认为2秒
@@ -52,15 +52,15 @@ type Client struct {
 
 	// 函数参数
 	// 记录信息；如日志记录
-	Record func(tag, msg string)
+	Record      func(tag, msg string)
 
 	// 和http.Client.Timeout相关
-	Timeout time.Duration
+	Timeout     time.Duration
 
 	//版本号
-	Version string
+	Version     string
 	//
-	debug bool
+	debug       bool
 }
 
 func (c *Client) SetDebug(debug bool) {
@@ -102,8 +102,10 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	}
 
 	defer func() {
-		if nil != err && nil != c.Record {
-			c.Record(ErrorReqRecord, fmt.Sprintf("query:: %s errorr:: %v) ", req.String(), err))
+		if nil != err {
+			if (nil != c.Record) {
+				c.Record(ErrorReqRecord, fmt.Sprintf("query:: %s error:: %v) ", req.String(), err))
+			}
 			err = clientError(err)
 		}
 	}()
@@ -118,7 +120,7 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	}
 
 	//必要头部信息设置
-	httpReq.Header.Set("User-Agent", `Bping-Curl-`+c.UserAgent+"/"+c.Version)
+	httpReq.Header.Set("User-Agent", `Bping-Curl-` + c.UserAgent + "/" + c.Version)
 
 	// 超时时间设置
 	// XXX:并发下同步未做处理。
@@ -139,8 +141,8 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	}
 	resp = &Response{Response: httpResp}
 	if nil != c.Record {
-		resStr,_:=resp.Bytes()
-		reqInfo := fmt.Sprintf("http query:: %s status:%d \n response:%s \n ts:(%v) \n", req.String(), httpResp.StatusCode,string(resStr),t1.Sub(t0))
+		resStr, _ := resp.Bytes()
+		reqInfo := fmt.Sprintf("http query:: %s status:%d \n response:%s \n ts:(%v) \n", req.String(), httpResp.StatusCode, string(resStr), t1.Sub(t0))
 		if t1.Sub(t0) >= c.SlowReqLong {
 			c.Record(SlowReqRecord, reqInfo)
 		}
