@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"bytes"
 )
 
 type ResponseFormat string
@@ -63,7 +64,8 @@ func (resp *Response) Bytes() ([]byte, error) {
 	} else {
 		resp.body, err = ioutil.ReadAll(resp.Body)
 	}
-
+	// 为了*http.Response能再次使用，重新复制回去
+	resp.Response.Body = ioutil.NopCloser(bytes.NewReader(resp.body))
 	return resp.body, err
 }
 
