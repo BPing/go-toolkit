@@ -1,3 +1,7 @@
 # Golib 
-    收集常用的golang包(包括本人和其他开源的)
+    收集常用的golang包
+    
+# 其他开源的  
+
+* [依赖注入`codegangsta`](https://github.com/codegangsta/inject/)
   
