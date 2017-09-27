@@ -23,7 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/BPing/Golib/curl/client"
+	"github.com/BPing/go-toolkit/curl/client"
 	"net/http"
 	"net/url"
 	"strings"
@@ -43,14 +43,14 @@ const (
 //
 //请求
 // 实现Request接口
-type CurlRequest struct {
+type Request struct {
 	client.BaseRequest
 	// http config
 	HttpConfig
 }
 
 //
-func (curl *CurlRequest) HttpRequest() (req *http.Request, err error) {
+func (curl *Request) HttpRequest() (req *http.Request, err error) {
 
 	v := url.Values{}
 
@@ -87,7 +87,7 @@ func (curl *CurlRequest) HttpRequest() (req *http.Request, err error) {
 				}
 				bodyData = strings.NewReader(string(dataJson))
 
-			//头部参数设置为form data 类型
+				//头部参数设置为form data 类型
 			case "application/x-www-form-urlencoded":
 				fallthrough
 			default:
@@ -111,8 +111,15 @@ func (curl *CurlRequest) HttpRequest() (req *http.Request, err error) {
 	return req, err
 }
 
-func (curl *CurlRequest) String() string {
-	return fmt.Sprintf("\n Url:%s, \n Method:%s,\n Header:%#v,\n Params:%#v,\n Data:%#v,\n Body:%v \n", curl.Url, curl.Method, curl.Headers, curl.Params, curl.Data, string(curl.Body))
+func (curl *Request) String() string {
+	return fmt.Sprintf("\n %s Url:%s, \n Method:%s,\n Header:%#v,\n Params:%#v,\n Data:%#v,\n Body:%v \n",
+		curl.BaseRequest.String(),
+		curl.Url,
+		curl.Method,
+		curl.Headers,
+		curl.Params,
+		curl.Data,
+		string(curl.Body))
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -135,7 +142,7 @@ func CurlWithClient(url, method string, params, header map[string]string, body [
 	if c == nil {
 		err = errors.New("*client.Client is nil")
 	}
-	curlReq := &CurlRequest{
+	req := &Request{
 		HttpConfig: HttpConfig{
 			Url:     url,
 			Method:  method,
@@ -145,7 +152,7 @@ func CurlWithClient(url, method string, params, header map[string]string, body [
 			Body:    body},
 	}
 
-	resp, err = c.DoRequest(curlReq)
+	resp, err = c.DoRequest(req)
 	return
 }
 
@@ -172,9 +179,9 @@ func HttpCurl(config HttpConfig) (resp *client.Response, err error) {
 	if clientTmp == nil {
 		clientTmp = client.DefaultClient
 	}
-	curlReq := &CurlRequest{
+	req := &Request{
 		HttpConfig: config,
 	}
-	resp, err = clientTmp.DoRequest(curlReq)
+	resp, err = clientTmp.DoRequest(req)
 	return
 }

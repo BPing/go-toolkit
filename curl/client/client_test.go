@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 )
 
 type TestRequest struct {
@@ -62,4 +63,53 @@ func TestClient(t *testing.T) {
 	fmt.Println(respxml)
 
 	<-end
+}
+
+func TestClient_SetRetryCount(t *testing.T) {
+	client := NewClient("test", nil)
+	client.SetDebug(true)
+	client.SetRetryCount(3)
+	req := &TestRequest{RequestURL: "https://www.baidu.co/"}
+	_, err := client.DoRequest(req)
+	if nil == err {
+		t.Fatal("weather Request", err)
+	}
+
+	if req.reqCount != 3 {
+		t.Fatal("SetRetryCount", err)
+	}
+}
+
+func TestClient_SetRecord(t *testing.T) {
+	logMsg := ""
+	client := NewClient("test", nil)
+	client.SetRecord(func(tag, msg string) {
+		logMsg = msg
+	})
+	client.SetRetryCount(1)
+	req := &TestRequest{RequestURL: "http://www.weather.com.cn/aa"}
+	client.DoRequest(req)
+	if logMsg == "" {
+		t.Fatal("set record fail")
+	}
+}
+
+func TestClient_SetSlowReqLong(t *testing.T) {
+	slowReqFlag := false
+	client := NewClient("test", nil)
+	client.SetRecord(func(tag, msg string) {
+		if tag == SlowReqRecord {
+			slowReqFlag = true
+		}
+		fmt.Printf("tag:%s msg:%s ", tag, msg)
+	})
+	client.SetSlowReqLong(time.Millisecond)
+	req := &TestRequest{RequestURL: "http://www.weather.com.cn/data/cityinfo/101190408.html"}
+	_, err := client.DoRequest(req)
+	if nil != err {
+		t.Fatal("weather Request", err)
+	}
+	if !slowReqFlag {
+		t.Fatal("SetSlowReqLong fail")
+	}
 }

@@ -86,3 +86,13 @@ func (resp *Response) ToXML(v interface{}) error {
 	}
 	return xml.Unmarshal(data, v)
 }
+
+// 将响应的Response的body字节内容以字符串格式
+// 如果为空的话，有可能是转化失败
+func (resp *Response) ToString() string {
+	data, err := resp.Bytes()
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}

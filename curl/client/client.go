@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	SlowReqRecord = "SlowReqRecord"
-	ReqRecord = "ReqRecord"
+	SlowReqRecord  = "SlowReqRecord"
+	ReqRecord      = "ReqRecord"
 	ErrorReqRecord = "ErrorReqRecord"
 )
 
@@ -44,31 +44,42 @@ type Client struct {
 	*http.Client
 
 	//
-	UserAgent   string
+	userAgent string
 
 	// 超过SlowReqLong时间长度的请求，将记录为慢请求
 	// 默认为2秒
-	SlowReqLong time.Duration
+	slowReqLong time.Duration
 
 	// 函数参数
 	// 记录信息；如日志记录
-	Record      func(tag, msg string)
+	record func(tag, msg string)
 
 	// 和http.Client.Timeout相关
-	Timeout     time.Duration
+	timeout time.Duration
+
+	// 失败尝试最大次数
+	maxBadRetryCount int
 
 	//版本号
-	Version     string
+	version string
 	//
-	debug       bool
+	debug bool
 }
 
 func (c *Client) SetDebug(debug bool) {
 	c.debug = debug
 }
 
+func (c *Client) SetVersion(version string) {
+	c.version = version
+}
+
+func (c *Client) SetUserAgent(userAgent string) {
+	c.userAgent = userAgent
+}
+
 func (c *Client) SetRecord(record func(tag, msg string)) {
-	c.Record = record
+	c.record = record
 }
 
 func (c *Client) SetTimeOut(timeout time.Duration) {
@@ -76,7 +87,14 @@ func (c *Client) SetTimeOut(timeout time.Duration) {
 }
 
 func (c *Client) SetSlowReqLong(long time.Duration) {
-	c.SlowReqLong = long
+	c.slowReqLong = long
+}
+
+func (c *Client) SetRetryCount(retryCount int) {
+	if retryCount <= 0 {
+		retryCount = 1
+	}
+	c.maxBadRetryCount = retryCount
 }
 
 // 设置代理
@@ -86,6 +104,8 @@ func (c *Client) SetSlowReqLong(long time.Duration) {
 // 		u, _ := url.ParseRequestURI("http://127.0.0.1:8118")
 // 		return u, nil
 // 	}
+//  你也可以通过设置环境变量 HTTP_PROXY 来设置代理，如：
+//      os.Setenv("HTTP_PROXY", "http://127.0.0.1:8888")
 func (c *Client) SetProxy(proxy func(*http.Request) (*url.URL, error)) {
 	//TODO::默认http.Client或者默认http.Transport时，是否值得改变代理（影响其他请求）？
 	if nil != c.Client && nil != c.Client.Transport {
@@ -100,18 +120,18 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	if nil == c.Client {
 		c.Client = http.DefaultClient
 	}
-
+	req.SetReqCount(0)
 	defer func() {
 		if nil != err {
-			if (nil != c.Record) {
-				c.Record(ErrorReqRecord, fmt.Sprintf("query:: %s error:: %v) ", req.String(), err))
+			if nil != c.record {
+				c.record(ErrorReqRecord, fmt.Sprintf("query:: %s error:: %v ", req.String(), err))
 			}
 			err = clientError(err)
 		}
 	}()
 
 	if nil == req {
-		return nil, errors.New("Request is nil")
+		return nil, errors.New("struct of Request is nil")
 	}
 
 	httpReq, err := req.HttpRequest()
@@ -120,44 +140,49 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 	}
 
 	//必要头部信息设置
-	httpReq.Header.Set("User-Agent", `Bping-Curl-` + c.UserAgent + "/" + c.Version)
-
+	httpReq.Header.Set("User-Agent", `Bping-Curl-`+c.userAgent+"/"+c.version)
 	// 超时时间设置
-	// XXX:并发下同步未做处理。
-	// 会混乱被覆盖，未能按照预期执行
-	// 建议client使用统一超时时间即可，
-	// 不必细化到每一个request中去
-	timeout := req.GetTimeOut()
-	if timeout < 0 {
-		timeout = c.Timeout
-	}
-	c.Client.Timeout = timeout
+	c.Client.Timeout = c.Timeout
 
+	var httpResp *http.Response
+	// 尝试次数记录
+	reqCount := 0
 	t0 := time.Now()
-	httpResp, err := c.Client.Do(httpReq)
+	for ; reqCount < c.maxBadRetryCount; reqCount++ {
+		httpResp, err = c.Client.Do(httpReq)
+		if nil == err {
+			break
+		}
+	}
 	t1 := time.Now()
+	req.SetReqCount(reqCount)
+
 	if nil != err {
 		return nil, err
 	}
 	resp = &Response{Response: httpResp}
-	if nil != c.Record {
-		resStr, _ := resp.Bytes()
-		reqInfo := fmt.Sprintf("http query:: %s status:%d \n response:%s \n ts:(%v) \n", req.String(), httpResp.StatusCode, string(resStr), t1.Sub(t0))
-		if t1.Sub(t0) >= c.SlowReqLong {
-			c.Record(SlowReqRecord, reqInfo)
+	if nil != c.record {
+		reqInfo := fmt.Sprintf("http query:: %s status:%d \n response:%s \n ts:(%v) \n",
+			req.String(),
+			httpResp.StatusCode,
+			resp.ToString(),
+			t1.Sub(t0))
+		if t1.Sub(t0) >= c.slowReqLong {
+			c.record(SlowReqRecord, reqInfo)
 		}
-		c.Record(ReqRecord, reqInfo)
+		c.record(ReqRecord, reqInfo)
 	}
 	return
 }
 
 func NewClient(title string, client *http.Client) *Client {
 	return &Client{
-		Client:      client,
-		Version:     Version,
-		UserAgent:   title,
-		debug:       false,
-		SlowReqLong: 2 * time.Second,
+		Client:           client,
+		version:          Version,
+		userAgent:        title,
+		debug:            false,
+		slowReqLong:      defaultSlowReqLong,
+		maxBadRetryCount: defaultMaxBadRetryCount,
 	}
 }
 
@@ -205,6 +230,20 @@ func SetSlowReqLong(long time.Duration) {
 // 内部调用DefaultClient
 func SetTimeOut(timeout time.Duration) {
 	DefaultClient.SetTimeOut(timeout)
+}
+
+// 设置失败尝试次数
+// 内部调用DefaultClient
+func SetRetryCount(retryCount int) {
+	DefaultClient.SetRetryCount(retryCount)
+}
+
+func SetVersion(version string) {
+	DefaultClient.SetVersion(version)
+}
+
+func SetUserAgent(userAgent string) {
+	DefaultClient.SetUserAgent(userAgent)
 }
 
 // 处理请求，内部调用DefaultClient
