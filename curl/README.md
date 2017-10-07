@@ -1,5 +1,7 @@
-# Curl 
-    curl请求
+[尝试使用新的版本](https://github.com/BPing/go-toolkit/tree/master/http-client)
+
+# Curl
+    curl请求。
     
      
 * Client：封装http.Client.修饰http.Client。处理请求过程加入一些必要的自定义处理。如：慢请求记录
@@ -9,3 +11,4 @@
 # TODO
 1、加上熔断模式机制？
 2、请求失败重试？
+
