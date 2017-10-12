@@ -191,7 +191,7 @@ func clientError(err error) error {
 	if nil == err {
 		return nil
 	}
-	return errors.New("Bping-Curl-Client-Failure:" + err.Error())
+	return errors.New("Bping-Http-Client-Failure:" + err.Error())
 }
 
 //----------------------------------------------------------------------------------------------------------------------
