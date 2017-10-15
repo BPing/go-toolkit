@@ -1,11 +1,12 @@
 package core
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
-	"fmt"
 )
 
 func init() {
@@ -24,7 +25,7 @@ type Client struct {
 	// 存放钩子对象队列数组
 	hookList []Hook
 
-	//
+	// 用户
 	userAgent string
 
 	// 和http.Client.Timeout相关
@@ -34,37 +35,51 @@ type Client struct {
 	// 默认2次
 	maxBadRetryCount int
 
-	//版本号
+	// 版本号
 	version string
-	//
+	// debug
 	debug bool
+
+	// 上下文
+	ctx context.Context
 }
 
-func (c *Client) SetDebug(debug bool) {
+func (c *Client) SetDebug(debug bool) *Client {
 	c.debug = debug
+	return c
 }
 
-func (c *Client) SetVersion(version string) {
+func (c *Client) SetVersion(version string) *Client {
 	c.version = version
+	return c
 }
 
-func (c *Client) SetUserAgent(userAgent string) {
+func (c *Client) SetUserAgent(userAgent string) *Client {
 	c.userAgent = userAgent
+	return c
 }
 
-func (c *Client) AppendHook(hook ...Hook) {
+func (c *Client) AppendHook(hook ...Hook) *Client {
 	c.hookList = append(c.hookList, hook...)
+	return c
 }
 
-func (c *Client) SetTimeOut(timeout time.Duration) {
+func (c *Client) SetTimeOut(timeout time.Duration) *Client {
 	c.Timeout = timeout
+	return c
 }
 
-func (c *Client) SetMaxBadRetryCount(retryCount int) {
+func (c *Client) SetContext(ctx context.Context) *Client {
+	c.ctx = ctx
+	return c
+}
+
+func (c *Client) SetMaxBadRetryCount(retryCount int) *Client {
 	if retryCount <= 0 {
 		retryCount = 1
 	}
 	c.maxBadRetryCount = retryCount
+	return c
 }
 
 // 设置代理
@@ -107,8 +122,8 @@ func (c *Client) doRequest(req Request) (resp *Response, err error) {
 	httpReq.Header.Set("User-Agent", `Bping-Curl-`+c.userAgent+"/"+c.version)
 	// 超时时间设置
 	c.Client.Timeout = c.Timeout
-	// 尝试次数记录
 	var httpResp *http.Response
+	// 尝试次数记录
 	reqCount := 0
 	for ; reqCount < c.maxBadRetryCount; reqCount++ {
 		httpResp, err = c.Client.Do(httpReq)
@@ -127,6 +142,9 @@ func (c *Client) doRequest(req Request) (resp *Response, err error) {
 // 请求开始处理之前的操作。
 // 钩子将在此执行，其相应的方法会被执行。
 func (c *Client) doBefore(req Request) (err error) {
+	if err = c.doCtx(c.ctx); err != nil {
+		return err
+	}
 	for _, hook := range c.hookList {
 		err = hook.BeforeRequest(req, *c)
 		if nil != err {
@@ -143,6 +161,16 @@ func (c *Client) doAfter(err error, req Request) {
 		hook.AfterRequest(err, req, *c)
 	}
 	return
+}
+
+// 处理Context
+func (c *Client) doCtx(ctx context.Context) error {
+	select {
+	default:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // 处理请求
@@ -177,13 +205,20 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 //	MaxBadRetryCount int
 //}
 
+// NewClient
 func NewClient(title string, client *http.Client) *Client {
+	return NewClientCtx(context.Background(), title, client)
+}
+
+// NewClientCtx
+func NewClientCtx(ctx context.Context, title string, client *http.Client) *Client {
 	return &Client{
 		Client:           client,
 		version:          Version,
 		userAgent:        title,
 		debug:            false,
 		maxBadRetryCount: defaultMaxBadRetryCount,
+		ctx:              ctx,
 	}
 }
 
@@ -215,28 +250,32 @@ func SetProxy(proxy func(*http.Request) (*url.URL, error)) {
 	DefaultClient.SetProxy(proxy)
 }
 
-func AppendHook(hook ...Hook) {
-	DefaultClient.AppendHook(hook...)
+func AppendHook(hook ...Hook) *Client {
+	return DefaultClient.AppendHook(hook...)
 }
 
 // 设置超时时间
 // 内部调用DefaultClient
-func SetTimeOut(timeout time.Duration) {
-	DefaultClient.SetTimeOut(timeout)
+func SetTimeOut(timeout time.Duration) *Client {
+	return DefaultClient.SetTimeOut(timeout)
 }
 
 // 设置失败尝试次数
 // 内部调用DefaultClient
-func SetMaxBadRetryCount(retryCount int) {
-	DefaultClient.SetMaxBadRetryCount(retryCount)
+func SetMaxBadRetryCount(retryCount int) *Client {
+	return DefaultClient.SetMaxBadRetryCount(retryCount)
 }
 
-func SetVersion(version string) {
-	DefaultClient.SetVersion(version)
+func SetVersion(version string) *Client {
+	return DefaultClient.SetVersion(version)
 }
 
-func SetUserAgent(userAgent string) {
-	DefaultClient.SetUserAgent(userAgent)
+func SetUserAgent(userAgent string) *Client {
+	return DefaultClient.SetUserAgent(userAgent)
+}
+
+func SetContext(ctx context.Context) *Client {
+	return DefaultClient.SetContext(ctx)
 }
 
 // 处理请求，内部调用DefaultClient

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 	"errors"
+	"context"
 )
 
 type TestRequest struct {
@@ -99,5 +100,16 @@ func TestClient_AppendHook(t *testing.T) {
 	_, err := client.DoRequest(req)
 	if err == nil || err.Error() != "some error happen" {
 		t.Fatal("AppendHook", err)
+	}
+}
+
+func TestNewClientCtx(t *testing.T) {
+	ctx,cancelFunc:=context.WithCancel(context.Background())
+	client:=NewClientCtx(ctx,"test", nil)
+	cancelFunc()
+	req := &TestRequest{RequestURL: "https://www.baidu.com/"}
+	_, err := client.DoRequest(req)
+	if err == nil || err.Error() != "context canceled"{
+		t.Fatal("NewClientCtx", err)
 	}
 }

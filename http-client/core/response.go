@@ -19,6 +19,11 @@ const (
 	XMLResponseFormat  = ResponseFormat("XML")
 )
 
+var (
+	RawRespNilErr     = errors.New("raw http response is nil. ")
+	RawRespBodyNilErr = errors.New("the body of raw http response is nil. ")
+)
+
 // 封装标准库中的Response
 // 方便处理响应内容信息
 type Response struct {
@@ -34,7 +39,7 @@ func (resp *Response) ToFile(filename string) error {
 	}
 	defer f.Close()
 
-	if resp.Response.Body == nil {
+	if resp.Response == nil || resp.Response.Body == nil {
 		return nil
 	}
 	defer resp.Response.Body.Close()
@@ -47,13 +52,13 @@ func (resp *Response) Bytes() ([]byte, error) {
 	if resp.body != nil {
 		return resp.body, nil
 	}
-
-	if resp.Response.Body == nil {
-		return nil, errors.New("body is nil")
+	if resp.Response == nil {
+		return nil, RawRespNilErr
 	}
-
+	if resp.Response.Body == nil {
+		return nil, RawRespBodyNilErr
+	}
 	var err error
-
 	defer resp.Response.Body.Close()
 	if resp.Header.Get("Content-Encoding") == "gzip" {
 		reader, err := gzip.NewReader(resp.Body)
@@ -95,4 +100,9 @@ func (resp *Response) ToString() string {
 		return ""
 	}
 	return string(data)
+}
+
+func (resp *Response) Close() error {
+	//resp.body = nil
+	return nil
 }
