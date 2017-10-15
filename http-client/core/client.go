@@ -1,7 +1,6 @@
 package core
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -41,7 +40,7 @@ type Client struct {
 	debug bool
 
 	// 上下文
-	ctx context.Context
+	ctx Context
 }
 
 func (c *Client) SetDebug(debug bool) *Client {
@@ -69,7 +68,7 @@ func (c *Client) SetTimeOut(timeout time.Duration) *Client {
 	return c
 }
 
-func (c *Client) SetContext(ctx context.Context) *Client {
+func (c *Client) SetContext(ctx Context) *Client {
 	c.ctx = ctx
 	return c
 }
@@ -164,7 +163,7 @@ func (c *Client) doAfter(err error, req Request) {
 }
 
 // 处理Context
-func (c *Client) doCtx(ctx context.Context) error {
+func (c *Client) doCtx(ctx Context) error {
 	select {
 	default:
 		return nil
@@ -207,11 +206,11 @@ func (c *Client) DoRequest(req Request) (resp *Response, err error) {
 
 // NewClient
 func NewClient(title string, client *http.Client) *Client {
-	return NewClientCtx(context.Background(), title, client)
+	return NewClientCtx(BackgroundContext(), title, client)
 }
 
 // NewClientCtx
-func NewClientCtx(ctx context.Context, title string, client *http.Client) *Client {
+func NewClientCtx(ctx Context, title string, client *http.Client) *Client {
 	return &Client{
 		Client:           client,
 		version:          Version,
@@ -274,7 +273,7 @@ func SetUserAgent(userAgent string) *Client {
 	return DefaultClient.SetUserAgent(userAgent)
 }
 
-func SetContext(ctx context.Context) *Client {
+func SetContext(ctx Context) *Client {
 	return DefaultClient.SetContext(ctx)
 }
 
