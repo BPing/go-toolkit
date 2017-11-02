@@ -38,6 +38,12 @@ const (
 	HEAD   = "HEAD"
 )
 
+const (
+	ContentTypeJson = "application/json"
+
+	ContentTypeFormDate = "application/x-www-form-urlencoded"
+)
+
 //----------------------------------------------------------------------------------------------------------------------
 
 //
@@ -48,6 +54,7 @@ type Request struct {
 	// http config
 	HttpConfig
 }
+
 //
 func (curl *Request) HttpRequest() (req *http.Request, err error) {
 	v := url.Values{}
@@ -72,8 +79,8 @@ func (curl *Request) HttpRequest() (req *http.Request, err error) {
 			contentType, _ := curl.Headers["Content-type"]
 			switch strings.ToLower(contentType) {
 			// json格式
-			case "application/json":
-				curl.Headers["Content-type"] = "application/json"
+			case ContentTypeJson:
+				curl.Headers["Content-type"] = ContentTypeJson
 				var dataJson []byte
 				dataJson, err = json.Marshal(curl.Data)
 				if err != nil {
@@ -82,10 +89,10 @@ func (curl *Request) HttpRequest() (req *http.Request, err error) {
 				bodyData = strings.NewReader(string(dataJson))
 
 				//头部参数设置为form data 类型
-			case "application/x-www-form-urlencoded":
+			case ContentTypeFormDate:
 				fallthrough
 			default:
-				curl.Headers["Content-type"] = "application/x-www-form-urlencoded"
+				curl.Headers["Content-type"] = ContentTypeFormDate
 				dataForm := url.Values{}
 				for key, val := range curl.Data {
 					dataForm.Add(key, val)
