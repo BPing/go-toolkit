@@ -12,7 +12,32 @@
 ## 系统钩子
 
 * LogHook 日志记录，包括慢请求
+
+```go
+	record := func(tag, msg string) {
+		logMsg = msg
+	}
+	core.AppendHook(NewLogHook(time.Duration(0), record))
+```
+
 * CircuitHook 断路器（熔断处理）
+
+```go
+	settings := CircuitSettings{
+		Name: "test",
+		ReadyToTrip: func(counts Counts) bool {
+			return counts.ConsecutiveFailures >= 3
+		},
+		OnStateChange: func(name string, from State, to State) {
+			//fmt.Println(name, from, to)
+		},
+		Interval:    time.Second * 20,
+		Timeout:     time.Second * 2,
+		MaxRequests: 6,
+	}
+	circuitHook := NewCircuitHook(settings)
+	core.AppendHook(circuitHook)
+```
 
 ## 自定义钩子
 
