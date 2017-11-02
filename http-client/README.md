@@ -31,3 +31,8 @@
 ```
 
 # curl
+
+* 发起请求
+```go
+curl.Do(url, method string, params, header map[string]string, body []byte)
+```
