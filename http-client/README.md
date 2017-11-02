@@ -23,6 +23,21 @@
 * CircuitHook 断路器（熔断处理）
 
 ```go
+// Name  名字，请务必保障名字的唯一性
+//
+// MaxRequests Half-Open状态下允许通过的最大请求数
+//
+// Interval 重置时间间隔（Closed状态下有效）。如果为零，永远不重置。
+//
+// Timeout  超时时间（Open状态下有效）。
+//          超时之后，状态将转变为Half-Open状态。
+//          如果为零，默认为60秒
+//
+// ReadyToTrip   测试是否应该从Closed状态转变为Open状态。
+//               true 表示可以转变，否则不可以。
+//               如果不配置，则采用默认的。默认失败次数达到5次则进入Open状
+//
+// OnStateChange 状态变化将调用此方法。
 	settings := CircuitSettings{
 		Name: "test",
 		ReadyToTrip: func(counts Counts) bool {
