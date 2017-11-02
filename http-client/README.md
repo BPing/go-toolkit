@@ -7,6 +7,14 @@
 * Request：接口类型。
 * Response：封装http.Response.修饰http.Response。集成一些常用的处理响应内容方法。如：`ToJson()` 返回json格式内容
 
+
+### 配置
+
+- `失败尝试次数`:默认2次
+```go
+ core.SetMaxBadRetryCount(2)
+```
+
 # hook
 
 ## 系统钩子
