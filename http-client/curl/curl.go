@@ -15,7 +15,7 @@
 //
 // curl包
 //
-//   func Curl(url, method string, params, header map[string]string, body []byte) (resBody map[string]interface{}, resHeader map[string][]string, responseStatus string)
+//   func Do(url, method string, params, header map[string]string, body []byte) (resBody map[string]interface{}, resHeader map[string][]string, responseStatus string)
 //
 package curl
 
@@ -24,10 +24,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/BPing/go-toolkit/http-client/core"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
-	"io"
 )
 
 const (
@@ -48,24 +48,18 @@ type Request struct {
 	// http config
 	HttpConfig
 }
-
 //
 func (curl *Request) HttpRequest() (req *http.Request, err error) {
-
 	v := url.Values{}
-
 	// set param
 	for key, val := range curl.Params {
 		v.Add(key, val)
 	}
-
 	curl.Method = strings.ToUpper(curl.Method)
-
 	queryParam := ""
 	if len(v) > 0 {
 		queryParam = "?" + v.Encode()
 	}
-
 	if curl.Method == GET {
 		req, err = http.NewRequest(curl.Method, curl.Url+queryParam, nil)
 	} else {
@@ -102,12 +96,10 @@ func (curl *Request) HttpRequest() (req *http.Request, err error) {
 		//fmt.Println(curl.Method, curl.Url + queryParam, bodyData)
 		req, err = http.NewRequest(curl.Method, curl.Url+queryParam, bodyData)
 	}
-
 	// set header
 	for key, val := range curl.Headers {
 		req.Header.Add(key, val)
 	}
-
 	return req, err
 }
 
@@ -129,7 +121,7 @@ func (curl *Request) String() string {
 // @params map[string]string 参数。?a=b
 // @header map[string]string 头部信息
 // @body   []byte
-// @Deprecated 建议使用 HttpCurl
+// @notice 建议使用 HttpCurl
 func Do(url, method string, params, header map[string]string, body []byte) (resp *core.Response, err error) {
 	resp, err = DoWithClient(url, method, params, header, body, core.DefaultClient)
 	return
