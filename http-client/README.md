@@ -81,6 +81,33 @@
 # curl
 
 * 发起请求
+
+
 ```go
-curl.Do(url, method string, params, header map[string]string, body []byte)
+package main
+
+import  (
+	"github.com/BPing/go-toolkit/http-client/curl"
+	)
+
+curl.Do( '', curl.POST , make(map[string]string), make(map[string]string) ,nil)
+```
+
+`或者`
+
+```go
+package main
+
+import  (
+	"github.com/BPing/go-toolkit/http-client/curl"
+	)
+
+// 如果Body不为nil，则会覆盖Data数据，也就是说Body优先级高于Data
+curl.HttpCurl(HttpConfig{
+			Url:     '',
+			Method:  curl.POST,
+			Params:  make(map[string]string),
+			Data:    make(map[string]string),
+			Headers: make(map[string]string),
+			Body:    nil})
 ```
