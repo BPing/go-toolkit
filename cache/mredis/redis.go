@@ -64,7 +64,7 @@ import (
 var (
 	ErrNil     = redis.ErrNil
 	ErrPowerOn = errors.New("RedisPool:turn on first")
-	ErrNotOK=errors.New("not ok")
+	ErrNotOK   = errors.New("not ok")
 )
 
 // 内部使用了池功能
@@ -224,7 +224,7 @@ func (rp *RedisPool) GetJson(key string, reply interface{}) (err error) {
 	if nil != err {
 		return err
 	}
-	if rstr==""{
+	if rstr == "" {
 		return errors.New("string of value is empty")
 	}
 	err = json.Unmarshal([]byte(rstr), reply)
@@ -317,68 +317,68 @@ func (rp *RedisPool) HLen(key string) (int, error) {
 
 // BLPOP key1 timeout(秒)
 // 移出并获取列表的第一个元素， 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
-func (rp *RedisPool) BLPop(key string,timeout int64) (map[string]string, error) {
-	return rp.BLPopMulti(timeout,key)
+func (rp *RedisPool) BLPop(key string, timeout int64) (map[string]string, error) {
+	return rp.BLPopMulti(timeout, key)
 }
 
 // BLPOP key1 [key2 ] timeout(秒)
 // 移出并获取列表的第一个元素， 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
-func (rp *RedisPool) BLPopMulti(timeout int64, keys...interface{}) (map[string]string, error) {
-	return redis.StringMap(rp.Do("BLPOP", append(keys,timeout)...))
+func (rp *RedisPool) BLPopMulti(timeout int64, keys ...interface{}) (map[string]string, error) {
+	return redis.StringMap(rp.Do("BLPOP", append(keys, timeout)...))
 }
 
 // BRPOP key1  timeout
 // 移出并获取列表的最后一个元素， 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
-func (rp *RedisPool) BRPop(key string,timeout int64) (map[string]string, error) {
-	return rp.BRPopMulti(timeout,key)
+func (rp *RedisPool) BRPop(key string, timeout int64) (map[string]string, error) {
+	return rp.BRPopMulti(timeout, key)
 }
 
 // BRPOP key1 [key2 ] timeout
 // 移出并获取列表的最后一个元素， 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
-func (rp *RedisPool) BRPopMulti(timeout int64, keys...interface{}) (map[string]string, error) {
-	return redis.StringMap(rp.Do("BRPOP", append(keys,timeout)...))
+func (rp *RedisPool) BRPopMulti(timeout int64, keys ...interface{}) (map[string]string, error) {
+	return redis.StringMap(rp.Do("BRPOP", append(keys, timeout)...))
 }
 
 // LLEN key
 // 获取列表长度
 func (rp *RedisPool) LLen(key string) (int64, error) {
-	return redis.Int64(rp.Do("LLEN",key))
+	return redis.Int64(rp.Do("LLEN", key))
 }
 
 // LPOP key
 // 移出并获取列表的第一个元素
 func (rp *RedisPool) LPop(key string) (string, error) {
-	return redis.String(rp.Do("LPOP",key))
+	return redis.String(rp.Do("LPOP", key))
 }
 
 // RPOP key
 // 移除并获取列表最后一个元素
 func (rp *RedisPool) RPop(key string) (string, error) {
-	return redis.String(rp.Do("RPOP",key))
+	return redis.String(rp.Do("RPOP", key))
 }
 
 // RPUSH key value1 [value2]
 // 在列表尾部中添加一个或多个值
-func (rp *RedisPool) RPush(key string,values ... interface{}) (int64, error) {
-	return redis.Int64(rp.Do("RPUSH",append([]interface{}{key}, values...)...))
+func (rp *RedisPool) RPush(key string, values ...interface{}) (int64, error) {
+	return redis.Int64(rp.Do("RPUSH", append([]interface{}{key}, values...)...))
 }
 
 // LPUSH key value1 [value2]
 // 将一个或多个值插入到列表头部
-func (rp *RedisPool) LPush(key string,values ... interface{}) (int64, error) {
-	return redis.Int64(rp.Do("LPUSH",append([]interface{}{key}, values...)...))
+func (rp *RedisPool) LPush(key string, values ...interface{}) (int64, error) {
+	return redis.Int64(rp.Do("LPUSH", append([]interface{}{key}, values...)...))
 }
 
 // LPUSHX key value1 [value2]
 // 将一个或多个值插入到已存在的列表头部
-func (rp *RedisPool) LPushX(key string,value interface{}) (int64, error) {
-	return redis.Int64(rp.Do("LPUSHX",key, value))
+func (rp *RedisPool) LPushX(key string, value interface{}) (int64, error) {
+	return redis.Int64(rp.Do("LPUSHX", key, value))
 }
 
 // RPUSHX key value1 [value2]
 // 为已存在的列表尾部添加值
-func (rp *RedisPool) RPushX(key string,value interface{}) (int64, error) {
-	return redis.Int64(rp.Do("RPUSHX",key, value))
+func (rp *RedisPool) RPushX(key string, value interface{}) (int64, error) {
+	return redis.Int64(rp.Do("RPUSHX", key, value))
 }
 
 // LREM key count value
@@ -388,20 +388,20 @@ func (rp *RedisPool) RPushX(key string,value interface{}) (int64, error) {
 //     count > 0 : 从表头开始向表尾搜索，移除与 VALUE 相等的元素，数量为 COUNT 。
 //     count < 0 : 从表尾开始向表头搜索，移除与 VALUE 相等的元素，数量为 COUNT 的绝对值。
 //     count = 0 : 移除表中所有与 VALUE 相等的值。
-func (rp *RedisPool) LRem(key string,count int64, value string) (int64, error) {
-	return redis.Int64(rp.Do("LREM",key,count,value))
+func (rp *RedisPool) LRem(key string, count int64, value string) (int64, error) {
+	return redis.Int64(rp.Do("LREM", key, count, value))
 }
 
 // LRANGE key start stop
 // 获取列表指定范围内的元素
-func (rp *RedisPool) LRange(key string,start, stop int64) ([]string, error) {
-	return redis.Strings(rp.Do("LRANGE",key,start, stop))
+func (rp *RedisPool) LRange(key string, start, stop int64) ([]string, error) {
+	return redis.Strings(rp.Do("LRANGE", key, start, stop))
 }
 
 // LSET key index value
 // 通过索引设置列表元素的值
-func (rp *RedisPool) LSet(key string,index int64, value string) (error) {
-	v, err :=  redis.String(rp.Do("LSET",key,index,value))
+func (rp *RedisPool) LSet(key string, index int64, value string) error {
+	v, err := redis.String(rp.Do("LSET", key, index, value))
 	if nil == err && v == okResp {
 		return nil
 	} else if nil == err {
@@ -414,8 +414,8 @@ func (rp *RedisPool) LSet(key string,index int64, value string) (error) {
 // Redis Ltrim 对一个列表进行修剪(trim)，就是说，让列表只保留指定区间内的元素，不在指定区间之内的元素都将被删除。
 // 下标 0 表示列表的第一个元素，以 1 表示列表的第二个元素，以此类推。
 // 你也可以使用负数下标，以 -1 表示列表的最后一个元素， -2 表示列表的倒数第二个元素，以此类推。
-func (rp *RedisPool) LTrim(key string, start ,stop int64) (error) {
-	v, err := redis.String(rp.Do("LTRIM",key ,start, stop))
+func (rp *RedisPool) LTrim(key string, start, stop int64) error {
+	v, err := redis.String(rp.Do("LTRIM", key, start, stop))
 	if nil == err && v == okResp {
 		return nil
 	} else if nil == err {
@@ -423,7 +423,6 @@ func (rp *RedisPool) LTrim(key string, start ,stop int64) (error) {
 	}
 	return err
 }
-
 
 // 无序集合类型相关命令操作
 //

@@ -214,117 +214,115 @@ func TestRedisPoolMap(t *testing.T) {
 
 	row, err = redisPool.HDel(testKey, testfield3)
 	if nil != err || row != 1 {
-		t.Fatal("HDel fail" , err)
+		t.Fatal("HDel fail", err)
 	}
 }
 
 func TestRedisPoolList(t *testing.T) {
-	testListKey:="testListKey"
-	testNotExistListKey:="testNotExistListKey"
-	testListVal1:="testListVal1"
-	testListVal2:="testListVal2"
-	testListVal3:="testListVal3"
+	testListKey := "testListKey"
+	testNotExistListKey := "testNotExistListKey"
+	testListVal1 := "testListVal1"
+	testListVal2 := "testListVal2"
+	testListVal3 := "testListVal3"
 
 	// 清理
-	_,err:=redisPool.LRem(testListKey,0,testListVal1)
+	_, err := redisPool.LRem(testListKey, 0, testListVal1)
 	if nil != err {
-		t.Fatal("LTrim fail" , err)
+		t.Fatal("LTrim fail", err)
 	}
-	_,err=redisPool.LRem(testListKey,0,testListVal2)
-	_,err=redisPool.LRem(testListKey,0,testListVal3)
+	_, err = redisPool.LRem(testListKey, 0, testListVal2)
+	_, err = redisPool.LRem(testListKey, 0, testListVal3)
 
-	intE,err:=redisPool.LPush(testListKey,testListVal1,testListVal2,testListVal3)
+	intE, err := redisPool.LPush(testListKey, testListVal1, testListVal2, testListVal3)
 	if nil != err {
-		t.Fatal("LPush",err)
+		t.Fatal("LPush", err)
 	}
 
 	strVal, err := redisPool.LPop(testListKey)
 	if nil != err || strVal != testListVal3 {
-		t.Fatal("LPop fail" , err)
+		t.Fatal("LPop fail", err)
 	}
 	fmt.Println(strVal)
 
-	err=redisPool.LTrim(testListKey,0,0)
+	err = redisPool.LTrim(testListKey, 0, 0)
 	if nil != err {
-		t.Fatal("LTrim fail" , err)
+		t.Fatal("LTrim fail", err)
 	}
 
 	// 清理
-	_,err=redisPool.LRem(testListKey,0,testListVal2)
+	_, err = redisPool.LRem(testListKey, 0, testListVal2)
 
-
-	intE,err=redisPool.RPush(testListKey,testListVal1,testListVal2,testListVal3)
+	intE, err = redisPool.RPush(testListKey, testListVal1, testListVal2, testListVal3)
 	if nil != err || intE != 3 {
-		t.Fatal("RPush",err)
+		t.Fatal("RPush", err)
 	}
 
 	strVal, err = redisPool.RPop(testListKey)
 	if nil != err || strVal != testListVal3 {
-		t.Fatal("RPop fail" , err)
+		t.Fatal("RPop fail", err)
 	}
 	fmt.Println(strVal)
 
 	strVal, err = redisPool.LPop(testListKey)
 	if nil != err || strVal != testListVal1 {
-		t.Fatal("RPush fail" , err)
+		t.Fatal("RPush fail", err)
 	}
 	fmt.Println(strVal)
 
 	// pushx
-	intE,err=redisPool.RPushX(testNotExistListKey,testListVal1)
-	if nil!=err||(nil == err&&intE!=0)  {
-		t.Fatal("RPushX fail",err)
+	intE, err = redisPool.RPushX(testNotExistListKey, testListVal1)
+	if nil != err || (nil == err && intE != 0) {
+		t.Fatal("RPushX fail", err)
 	}
 
-	intE,err=redisPool.LPushX(testNotExistListKey,testListVal1)
-	if nil!=err||(nil == err&&intE!=0) {
-		t.Fatal("LPushX fail",err,intE)
+	intE, err = redisPool.LPushX(testNotExistListKey, testListVal1)
+	if nil != err || (nil == err && intE != 0) {
+		t.Fatal("LPushX fail", err, intE)
 	}
 
-        // LRange
-	strs,err:=redisPool.LRange(testListKey,0,10)
-	if nil != err   {
-		t.Fatal("LRange fail",err)
+	// LRange
+	strs, err := redisPool.LRange(testListKey, 0, 10)
+	if nil != err {
+		t.Fatal("LRange fail", err)
 	}
 	fmt.Println(strs)
 
 	// LLen
-	len,err:=redisPool.LLen(testListKey)
-	if nil != err ||len!=1   {
-		t.Fatal("LLen fail",err)
+	len, err := redisPool.LLen(testListKey)
+	if nil != err || len != 1 {
+		t.Fatal("LLen fail", err)
 	}
 	fmt.Println(strs)
 
-        // block
-	strMap,err:=redisPool.BLPop(testListKey,1)
-	if nil != err ||strMap[testListKey]!=testListVal2   {
-		t.Fatal("BLPop fail",err)
+	// block
+	strMap, err := redisPool.BLPop(testListKey, 1)
+	if nil != err || strMap[testListKey] != testListVal2 {
+		t.Fatal("BLPop fail", err)
 	}
 	fmt.Println(strMap)
 
-	strMap,err=redisPool.BLPop(testListKey,1)
-	if nil == err  {
+	strMap, err = redisPool.BLPop(testListKey, 1)
+	if nil == err {
 		t.Fatal("BLPop fail non")
 	}
-	fmt.Println(strMap,err)
+	fmt.Println(strMap, err)
 
-
-	intE,err=redisPool.RPush(testListKey,testListVal1)
-	if nil != err  {
-		t.Fatal("BRPop RPush",err)
+	intE, err = redisPool.RPush(testListKey, testListVal1)
+	if nil != err {
+		t.Fatal("BRPop RPush", err)
 	}
 
-	strMap,err=redisPool.BRPop(testListKey,1)
-	if nil != err ||strMap[testListKey]!=testListVal1   {
-		t.Fatal("BRPop fail",err)
+	strMap, err = redisPool.BRPop(testListKey, 1)
+	if nil != err || strMap[testListKey] != testListVal1 {
+		t.Fatal("BRPop fail", err)
 	}
-	fmt.Println(strMap,time.Now().Unix())
+	fmt.Println(strMap, time.Now().Unix())
 
-	strMap,err=redisPool.BRPop(testListKey,1)
+	strMap, err = redisPool.BRPop(testListKey, 1)
 	if nil == err {
 		t.Fatal("BRPop fail non")
 	}
-	fmt.Println(strMap,err,time.Now().Unix())
+	fmt.Println(strMap, err, time.Now().Unix())
 
 }
 
