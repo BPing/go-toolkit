@@ -8,8 +8,8 @@ const (
 	DebugTag = "PC-DebugTag"
 	PanicTag = "PC-PanicTag"
 
-	CacheType=ContainerType("cache")
-	ChannelType=ContainerType("channel")
+	CacheType   = ContainerType("cache")
+	ChannelType = ContainerType("channel")
 )
 
 type ContainerType string

@@ -72,13 +72,13 @@ func TestContainerRedis(t *testing.T) {
 	}
 
 	container, err := NewContainer(Config{
-		Type:   CacheType,
-		MsgLen: 10,
-		CacheInstance:redisInstance,
-		ConsumeFunc:consumeFunc,
-		Unmarshal:Unmarshal,
-		Marshal:Marshal,
-		AssistIdleKeepAlive:1,
+		Type:                CacheType,
+		MsgLen:              10,
+		CacheInstance:       redisInstance,
+		ConsumeFunc:         consumeFunc,
+		Unmarshal:           Unmarshal,
+		Marshal:             Marshal,
+		AssistIdleKeepAlive: 1,
 	})
 
 	fmt.Println(err)
@@ -131,9 +131,9 @@ func TestContainerRedisErr(t *testing.T) {
 	}
 
 	_, err := NewContainer(Config{
-		Type:   CacheType,
-		MsgLen: 0,
-		CacheInstance:redisInstance,
+		Type:          CacheType,
+		MsgLen:        0,
+		CacheInstance: redisInstance,
 	})
 
 	//_, err = NewContainerPC(0, consumeFunc)
@@ -141,18 +141,18 @@ func TestContainerRedisErr(t *testing.T) {
 		t.Fatal(ErrConsumeFuncNil)
 	}
 
-	_, err = NewContainerCachePC(nil, consumeFunc,Unmarshal,Marshal)
+	_, err = NewContainerCachePC(nil, consumeFunc, Unmarshal, Marshal)
 	if err != ErrCacheInstanceNil {
 		t.Fatal(ErrCacheInstanceNil)
 	}
 
-	_, err = NewContainerCachePC(redisInstance, consumeFunc,nil,Marshal)
+	_, err = NewContainerCachePC(redisInstance, consumeFunc, nil, Marshal)
 
 	if err != ErrUnmarshalNil {
 		t.Fatal(ErrUnmarshalNil)
 	}
 
-	_, err = NewContainerCachePC(redisInstance, consumeFunc,Unmarshal,nil)
+	_, err = NewContainerCachePC(redisInstance, consumeFunc, Unmarshal, nil)
 
 	if err != ErrMarshalNil {
 		t.Fatal(ErrMarshalNil)

@@ -1,29 +1,26 @@
 package example
 
 import (
-	"fmt"
-	"github.com/BPing/Golib/cache/mredis"
-	. "github.com/BPing/Golib/producer_consumer"
-	"github.com/garyburd/redigo/redis"
 	"encoding/json"
+	"fmt"
+	"github.com/BPing/go-toolkit/cache/mredis"
+	. "github.com/BPing/go-toolkit/producer_consumer"
+	"github.com/garyburd/redigo/redis"
 	"strconv"
 	"time"
 )
-
-
 
 type Message struct {
 	Key string
 }
 
-func(msg *Message)Id()string{
+func (msg *Message) Id() string {
 	return msg.Key
 }
 
-func NewMessage(id string)*Message{
+func NewMessage(id string) *Message {
 	return &Message{id}
 }
-
 
 var containerRedis *ContainerRedis
 
@@ -50,30 +47,30 @@ func init() {
 	} else {
 		MRedis.SetPowerOn(true)
 	}
-	containerRedis,_= NewContainerCachePC(MRedis,func(msg IMessage){
+	containerRedis, _ = NewContainerCachePC(MRedis, func(msg IMessage) {
 		//time.Sleep(time.Millisecond*100)
 		fmt.Println("c----------------")
-		if msg ==nil{
+		if msg == nil {
 			return
 		}
 		fmt.Println(msg.Id())
 	}, func(msgByte []byte) (IMessage, error) {
-		msg:=&Message{}
+		msg := &Message{}
 		err := json.Unmarshal(msgByte, msg)
 		//fmt.Println("Unmarshal",string(msgByte),err)
 		return msg, err
 	}, func(msg IMessage) ([]byte, error) {
-		msgByte,err:=json.Marshal(msg.(*Message))
+		msgByte, err := json.Marshal(msg.(*Message))
 		//fmt.Println("Marshal",string(msgByte),err)
-		return msgByte,err
+		return msgByte, err
 	})
 }
 
 func RedisExample() {
 	containerRedis.ReadTimeout = 1
-	containerRedis.MsgLen=10
-	containerRedis.Record= func(tag string, msg interface{}){
-		fmt.Println(tag,msg)
+	containerRedis.MsgLen = 10
+	containerRedis.Record = func(tag string, msg interface{}) {
+		fmt.Println(tag, msg)
 	}
 	containerRedis.Consume()
 

@@ -19,7 +19,6 @@ type IContainer interface {
 	NumGoroutine() (master, assistActive int64)
 }
 
-
 // 消息接口
 type IMessage interface {
 	// 标识
@@ -48,10 +47,10 @@ type ICache interface {
 	// BLPOP key1 timeout(秒)
 	// 移出并获取列表的第一个元素，
 	// 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
-	BLPop(key string,timeout int64)(map[string]string, error)
+	BLPop(key string, timeout int64) (map[string]string, error)
 
 	// 在列表尾部中添加一个或多个值
-        RPush(key string,values ... interface{}) (int64, error)
+	RPush(key string, values ...interface{}) (int64, error)
 
 	// 获取列表长度
 	LLen(key string) (int64, error)

@@ -14,7 +14,7 @@ func NewContainer(config Config) (IContainer, error) {
 		if err != nil {
 			return nil, err
 		}
-		container.SetAssistIdleKeepAlive(time.Duration(config.AssistIdleKeepAlive)*time.Second)
+		container.SetAssistIdleKeepAlive(time.Duration(config.AssistIdleKeepAlive) * time.Second)
 		container.Record = config.Record
 		return container, nil
 	case CacheType:
@@ -28,7 +28,7 @@ func NewContainer(config Config) (IContainer, error) {
 		return container, nil
 
 	default:
-		return nil, errors.New("Invalid Type")
+		return nil, errors.New("invalid type")
 	}
 	return nil, errors.New("fail to create container")
 }

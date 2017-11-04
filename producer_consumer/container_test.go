@@ -12,12 +12,12 @@ type Message struct {
 	Key string
 }
 
-func(msg *Message)Id()string{
+func (msg *Message) Id() string {
 	return msg.Key
 }
 
-func NewMessage(id string)*Message{
-    return &Message{id}
+func NewMessage(id string) *Message {
+	return &Message{id}
 }
 
 func TestContainer(t *testing.T) {
@@ -26,23 +26,23 @@ func TestContainer(t *testing.T) {
 	}
 
 	container, _ := NewContainer(Config{
-		Type:ChannelType,
-		MsgLen:20,
-		ConsumeFunc:consumeFunc,
-		AssistIdleKeepAlive:1,
+		Type:                ChannelType,
+		MsgLen:              20,
+		ConsumeFunc:         consumeFunc,
+		AssistIdleKeepAlive: 1,
 	})
 	container.Consume()
 
 	go func() {
 		for i := 0; i < 50; i++ {
-			msg:= NewMessage("goone-"+strconv.Itoa(i))
+			msg := NewMessage("goone-" + strconv.Itoa(i))
 			container.Produce(msg)
 		}
 	}()
 
 	go func() {
 		for i := 0; i < 50; i++ {
-			msg:= NewMessage("gotwo-"+strconv.Itoa(i))
+			msg := NewMessage("gotwo-" + strconv.Itoa(i))
 			container.Produce(msg)
 			time.Sleep(time.Millisecond * 20)
 		}
@@ -50,7 +50,7 @@ func TestContainer(t *testing.T) {
 
 	go func() {
 		for i := 0; i < 50; i++ {
-			msg:= NewMessage("gothree-"+strconv.Itoa(i))
+			msg := NewMessage("gothree-" + strconv.Itoa(i))
 			container.Produce(msg)
 			time.Sleep(time.Millisecond * 100)
 		}
@@ -65,9 +65,9 @@ func TestContainerErr(t *testing.T) {
 	}
 
 	_, err := NewContainer(Config{
-		Type:ChannelType,
-		MsgLen:0,
-		ConsumeFunc:consumeFunc,
+		Type:        ChannelType,
+		MsgLen:      0,
+		ConsumeFunc: consumeFunc,
 	})
 
 	//_, err = NewContainerPC(0, consumeFunc)
